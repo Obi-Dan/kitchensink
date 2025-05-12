@@ -19,7 +19,7 @@ public class ResourcesTest {
         Resources resources = new Resources();
         assertNotNull(resources);
     }
-    
+
     @Test
     public void testLoggerCreation() {
         // This is a basic test that doesn't rely on CDI injection
@@ -28,4 +28,4 @@ public class ResourcesTest {
         assertNotNull(logger);
         assertTrue(logger.getName().contains("ResourcesTest"));
     }
-} 
+}
