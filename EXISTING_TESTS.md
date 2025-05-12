@@ -79,19 +79,81 @@ Provides good system-level validation of the API but has limitations:
 
 The existing tests can be categorized as follows:
 
-1. **Unit Testing**: None
-   - The application lacks isolated tests for individual classes or methods
+### 1. Unit Testing
 
-2. **Integration Testing**: MemberRegistrationIT.java
-   - Tests the integration between components within the container
-   - Verifies that multiple layers work together correctly
+Unit testing focuses on testing individual components (classes, methods, functions) in isolation from the rest of the system. 
 
-3. **System Testing**: RemoteMemberRegistrationIT.java
-   - Tests the complete application through its external interface
-   - Verifies that the system as a whole functions correctly
+**Characteristics:**
+- Tests a single unit of code with no external dependencies
+- Dependencies are typically mocked or stubbed
+- Fast execution and quick feedback
+- Verifies that individual pieces function correctly in isolation
+- Usually written and maintained by developers
 
-4. **Acceptance Testing**: None
-   - No tests that verify the application meets business requirements from a user perspective
+**Benefits:**
+- Localized and specific feedback about what's broken
+- Easy to identify the source of failures
+- Promotes modular and well-structured code
+- Guards against regressions when code is modified
+
+**The Kitchensink application currently lacks unit tests.**
+
+### 2. Integration Testing
+
+Integration testing verifies that different modules or services work together correctly. It focuses on the interactions between components rather than the components themselves.
+
+**Characteristics:**
+- Tests how multiple components interact with each other
+- May involve database interactions, file system access, or network calls
+- More complex setup than unit tests
+- Tests functionality across module boundaries
+- Often requires a test container or specific environment
+
+**Benefits:**
+- Verifies that components work together as expected
+- Catches issues that might not be apparent when testing components in isolation
+- Tests configuration and wiring between components
+- Validates behavior across architectural boundaries
+
+**The Kitchensink application uses MemberRegistrationIT.java for integration testing.**
+
+### 3. System Testing
+
+System testing evaluates the complete, integrated software system to verify it meets specified requirements. It tests the application as a whole from an external perspective.
+
+**Characteristics:**
+- Tests the entire application as a black box
+- Focuses on end-to-end functionality and user flows
+- Tests the application in an environment similar to production
+- Often involves multiple subsystems and external interfaces
+- Validates the system against functional and non-functional requirements
+
+**Benefits:**
+- Ensures the system functions correctly as a whole
+- Validates the application from an end-user perspective
+- Tests real-world scenarios and use cases
+- Identifies integration issues across the entire system
+
+**The Kitchensink application uses RemoteMemberRegistrationIT.java for system testing.**
+
+### 4. Acceptance Testing
+
+Acceptance testing determines if the software meets business requirements and is acceptable for delivery. These tests validate whether the application fulfills user needs.
+
+**Characteristics:**
+- Focuses on business requirements and user scenarios
+- Often written in collaboration with business stakeholders
+- Uses business-oriented language rather than technical details
+- Validates that the system provides business value
+- May include user interface testing and user experience validation
+
+**Benefits:**
+- Ensures the application meets user expectations and needs
+- Provides validation from a business perspective
+- Serves as documentation of business requirements
+- Helps bridge the gap between technical implementation and business value
+
+**The Kitchensink application currently lacks acceptance tests.**
 
 ## Running the Tests
 
