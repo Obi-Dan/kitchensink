@@ -1,16 +1,19 @@
-.PHONY: build run stop logs clean help
+.PHONY: build run stop logs clean test test-coverage test-report help
 
 # Default target
 help:
 	@echo "Kitchensink Application Makefile"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make build    - Build the Docker image"
-	@echo "  make run      - Run the application (builds if not built yet)"
-	@echo "  make stop     - Stop the running application"
-	@echo "  make logs     - Show application logs"
-	@echo "  make clean    - Remove containers, volumes, and images"
-	@echo "  make help     - Show this help message"
+	@echo "  make build          - Build the Docker image"
+	@echo "  make run            - Run the application (builds if not built yet)"
+	@echo "  make stop           - Stop the running application"
+	@echo "  make logs           - Show application logs"
+	@echo "  make clean          - Remove containers, volumes, and images"
+	@echo "  make test           - Run unit tests"
+	@echo "  make test-coverage  - Run unit tests with code coverage"
+	@echo "  make test-report    - Open the coverage report in a browser"
+	@echo "  make help           - Show this help message"
 	@echo ""
 
 # Build the Docker image
@@ -40,4 +43,25 @@ logs:
 clean: stop
 	@echo "Cleaning up Docker resources..."
 	docker-compose down -v --rmi local
-	@echo "Cleanup complete." 
+	@echo "Cleanup complete."
+
+# Run unit tests
+test:
+	@echo "Running unit tests..."
+	mvn dependency:resolve clean test
+
+# Run unit tests with code coverage
+test-coverage:
+	@echo "Running unit tests with JaCoCo code coverage..."
+	mvn dependency:resolve clean test jacoco:report
+
+# Open the coverage report in a browser (OS dependent)
+test-report:
+	@echo "Opening coverage report..."
+	@if [ "$(shell uname)" = "Darwin" ]; then \
+		open target/site/jacoco/index.html; \
+	elif [ "$(shell uname)" = "Linux" ]; then \
+		xdg-open target/site/jacoco/index.html; \
+	else \
+		echo "Please open target/site/jacoco/index.html in your browser"; \
+	fi 
