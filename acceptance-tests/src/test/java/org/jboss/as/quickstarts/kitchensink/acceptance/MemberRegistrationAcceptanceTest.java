@@ -244,4 +244,134 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body("phoneNumber", equalTo("numeric value out of bounds (<12 digits>.<0 digits> expected)"));
     }
+
+    @Test
+    @Order(7) // Ensure this runs after a successful registration if it reuses data
+    public void testRegisterMemberWithDuplicateEmail() {
+        // REQ-1.1.2: Each member must have a unique email address in the system.
+        // REQ-3.2.2: For duplicate email addresses, the API shall return a specific conflict response.
+
+        // Step 1: Register an initial member to ensure the email exists
+        String existingEmail = generateUniqueEmail(); // Use a fresh email for this test sequence
+        String initialName = generateValidName();
+        String initialPhone = generateValidPhoneNumber();
+
+        JsonObject initialMemberPayload = Json.createObjectBuilder()
+                .add("name", initialName)
+                .add("email", existingEmail)
+                .add("phoneNumber", initialPhone)
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(initialMemberPayload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(200); // Assuming 200 for successful creation as per other tests
+
+        // Step 2: Attempt to register another member with the same email
+        String duplicateName = "Duplicate " + generateValidName();
+        String duplicatePhone = generateValidPhoneNumber(); // Different phone
+
+        JsonObject duplicateMemberPayload = Json.createObjectBuilder()
+                .add("name", duplicateName)
+                .add("email", existingEmail) // Same email
+                .add("phoneNumber", duplicatePhone)
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(duplicateMemberPayload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(409) // REQ-3.1.5: Expect 409 Conflict for duplicate email
+            .contentType(ContentType.JSON)
+            // The actual error message structure for duplicates needs to be verified.
+            // Assuming it's similar to other validation errors, e.g., {"email": "Email address is already in use"}
+            // Or it might be a general message in the body.
+            // For now, let's check for a body that contains the word "duplicate" or "conflict" or "unique" related to email.
+            // This assertion might need adjustment based on actual API response.
+            .body("email", containsString("Email taken")) // Corrected based on actual error message
+            // Alternative: .body(containsString("Email address already exists"));
+            // Alternative: .body(containsString("Unique constraint violation"));
+            ;
+    }
+
+    @Test
+    @Order(8)
+    public void testRetrieveMemberById_Success() {
+        // REQ-1.3.2: The system shall support retrieving a single member by their unique identifier.
+        // REQ-3.1.3: The API shall support retrieving a single member by ID (GET /members/{id}).
+
+        // Step 1: Register a new member to get a valid ID
+        String testName = generateValidName();
+        String uniqueEmail = generateUniqueEmail();
+        String testPhone = generateValidPhoneNumber();
+
+        JsonObject newMemberPayload = Json.createObjectBuilder()
+                .add("name", testName)
+                .add("email", uniqueEmail)
+                .add("phoneNumber", testPhone)
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(newMemberPayload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(200);
+
+        // Step 2: Get all members to find the ID of the newly created one
+        Response getAllResponse = given()
+            .accept(ContentType.JSON)
+        .when()
+            .get()
+        .then()
+            .statusCode(200)
+            .extract().response();
+        
+        List<Map<String, Object>> allMembers = getAllResponse.jsonPath().getList("$");
+        Integer memberId = null;
+        for (Map<String, Object> member : allMembers) {
+            if (uniqueEmail.equals(member.get("email"))) {
+                memberId = ((Number) member.get("id")).intValue();
+                break;
+            }
+        }
+        assertNotNull(memberId, "Could not find newly created member to retrieve its ID.");
+
+        // Step 3: Retrieve the member by its ID
+        given()
+            .accept(ContentType.JSON)
+            .pathParam("id", memberId)
+        .when()
+            .get("/{id}")
+        .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("id", equalTo(memberId))
+            .body("name", equalTo(testName))
+            .body("email", equalTo(uniqueEmail))
+            .body("phoneNumber", equalTo(testPhone));
+    }
+
+    @Test
+    @Order(9)
+    public void testRetrieveMemberById_NotFound() {
+        // REQ-1.3.2, REQ-3.1.3, REQ-3.1.5 (404 for not found)
+        long nonExistentId = 999999L; // Assuming this ID will not exist
+
+        given()
+            .accept(ContentType.JSON)
+            .pathParam("id", nonExistentId)
+        .when()
+            .get("/{id}")
+        .then()
+            .statusCode(404);
+            // Optionally, check for an empty body or a specific error message if the API provides one for 404.
+            // For now, just checking the status code.
+    }
 }
