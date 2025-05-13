@@ -36,6 +36,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(Arquillian.class)
 public class MemberRegistrationIT {
+
     @Deployment
     public static Archive<?> createTestArchive() {
         return ShrinkWrap.create(WebArchive.class, "test.war")
@@ -65,5 +66,4 @@ public class MemberRegistrationIT {
         assertNotNull(newMember.getId());
         log.info(newMember.getName() + " was persisted with id " + newMember.getId());
     }
-
 }

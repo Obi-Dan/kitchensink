@@ -20,14 +20,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
 import java.util.logging.Logger;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,21 +55,19 @@ public class RemoteMemberRegistrationIT {
 
     @Test
     public void testRegister() throws Exception {
-        Member newMember = new Member();
-        newMember.setName("Jane Doe");
-        newMember.setEmail("jane@mailinator.com");
-        newMember.setPhoneNumber("2125551234");
+        // Create JSON payload directly
         JsonObject json = Json.createObjectBuilder()
                 .add("name", "Jane Doe")
                 .add("email", "jane@mailinator.com")
                 .add("phoneNumber", "2125551234").build();
+
         HttpRequest request = HttpRequest.newBuilder(getHTTPEndpoint())
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
                 .build();
+
         HttpResponse response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         Assert.assertEquals(200, response.statusCode());
-        Assert.assertEquals("", response.body().toString() );
+        Assert.assertEquals("", response.body().toString());
     }
-
 }

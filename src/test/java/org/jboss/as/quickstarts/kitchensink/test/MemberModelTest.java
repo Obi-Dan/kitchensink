@@ -10,8 +10,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.junit.Before;
 import org.junit.Test;
