@@ -374,4 +374,73 @@ public class MemberRegistrationAcceptanceTest {
             // Optionally, check for an empty body or a specific error message if the API provides one for 404.
             // For now, just checking the status code.
     }
+
+    @Test
+    @Order(10)
+    public void testListAllMembers_IsOrderedByName() {
+        // REQ-1.3.1: The system shall provide capability to retrieve a list of all members, ordered by name.
+        // REQ-3.1.2: The API shall support retrieving the list of all members (GET /members).
+
+        // Step 1: Ensure some members exist with known names for ordering check.
+        String nameAlice = "Alice Wonderland";
+        String nameBob = "Bob The Builder";
+        String nameCharlie = "Charlie Chaplin";
+
+        String emailAlice = generateUniqueEmail();
+        try { Thread.sleep(10); } catch (InterruptedException ignored) {} // Ensure unique timestamps for emails
+        String emailBob = generateUniqueEmail();
+        try { Thread.sleep(10); } catch (InterruptedException ignored) {}
+        String emailCharlie = generateUniqueEmail();
+
+        java.util.Set<String> testEmails = new java.util.HashSet<>(java.util.Arrays.asList(emailAlice, emailBob, emailCharlie));
+
+        JsonObject memberAlicePayload = Json.createObjectBuilder()
+            .add("name", nameAlice)
+            .add("email", emailAlice)
+            .add("phoneNumber", generateValidPhoneNumber()).build();
+
+        JsonObject memberBobPayload = Json.createObjectBuilder()
+            .add("name", nameBob)
+            .add("email", emailBob)
+            .add("phoneNumber", generateValidPhoneNumber()).build();
+        
+        JsonObject memberCharliePayload = Json.createObjectBuilder()
+            .add("name", nameCharlie)
+            .add("email", emailCharlie)
+            .add("phoneNumber", generateValidPhoneNumber()).build();
+
+        // Register members in a non-alphabetical order of names to test sorting
+        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post().then().statusCode(200);
+        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post().then().statusCode(200);
+        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post().then().statusCode(200);
+
+        // Step 2: Retrieve all members
+        Response response = given()
+            .accept(ContentType.JSON)
+        .when()
+            .get()
+        .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .extract().response();
+
+        List<Map<String, Object>> allMembers = response.jsonPath().getList("$");
+        List<String> relevantNames = new java.util.ArrayList<>();
+
+        for (Map<String, Object> member : allMembers) {
+            if (testEmails.contains(member.get("email"))) {
+                relevantNames.add((String) member.get("name"));
+            }
+        }
+        
+        // The list from the server is already sorted by name. 
+        // So, if we add our relevant names in the order they appear in the full list,
+        // they should naturally be sorted if the server-side sorting works.
+        // No client-side sort needed for relevantNames if server sorts correctly.
+
+        assertEquals(3, relevantNames.size(), "Expected to find the 3 members created in this test.");
+        assertEquals(nameAlice, relevantNames.get(0), "First member should be Alice.");
+        assertEquals(nameBob, relevantNames.get(1), "Second member should be Bob.");
+        assertEquals(nameCharlie, relevantNames.get(2), "Third member should be Charlie.");
+    }
 }
