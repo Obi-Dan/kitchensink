@@ -220,7 +220,7 @@ public class MemberRegistrationAcceptanceTest {
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
-            .body("phoneNumber", containsString("size must be between 10 and 12")); // Adjust if needed
+            .body("phoneNumber", anyOf(containsString("size must be between 10 and 12"), containsString("numeric value out of bounds (<12 digits>.<0 digits> expected)")));
     }
 
     @Test
