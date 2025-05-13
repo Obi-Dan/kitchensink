@@ -2,7 +2,7 @@ FROM maven:3.9-eclipse-temurin-11 AS builder
 
 WORKDIR /app
 COPY . .
-RUN mvn clean package -DskipTests
+RUN mvn clean package
 
 FROM quay.io/wildfly/wildfly:28.0.1.Final-jdk11
 

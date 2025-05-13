@@ -3,7 +3,7 @@ version: '3.8'
 services:
   wildfly:
     build:
-      context: .
+      context: ./app
       dockerfile: Dockerfile
     container_name: kitchensink-app
     ports:
