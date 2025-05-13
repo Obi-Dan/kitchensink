@@ -1,0 +1,6 @@
+---
+description: ensure all code changes adhere to the style for wildfly
+globs: 
+alwaysApply: false
+---
+ensure all code changes adhere to the style for wildfly

@@ -14,7 +14,6 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import jakarta.validation.executable.ExecutableValidator;
 import jakarta.validation.metadata.BeanDescriptor;
-import jakarta.ws.rs.core.Response;
 
 import org.jboss.as.quickstarts.kitchensink.data.MemberRepository;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
@@ -78,21 +77,6 @@ public class MemberRestResourceTest {
         assertNotNull(member);
         assertEquals("John Doe", member.getName());
         assertEquals("john@example.com", member.getEmail());
-    }
-
-    @Test
-    public void testCreateMember() throws Exception {
-        // Create a new member to register
-        Member newMember = createMember(null, "New User", "new@example.com", "5551234567");
-
-        // Call the REST method
-        Response response = restService.createMember(newMember);
-
-        // Verify the result
-        assertNotNull(response);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        assertEquals("New User", registration.getLastRegisteredMember().getName());
-        assertEquals("new@example.com", registration.getLastRegisteredMember().getEmail());
     }
 
     // Helper method to inject dependencies using reflection

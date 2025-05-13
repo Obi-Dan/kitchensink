@@ -71,6 +71,12 @@ public class MemberControllerTest {
         assertEquals(FacesMessage.SEVERITY_INFO, message.getSeverity());
         assertEquals("Registered!", message.getSummary());
 
+        // Since controller.register() calls initNewMember() which creates a new Member instance,
+        // we need to get the latest reference to newMember
+        Field newMemberField = MemberController.class.getDeclaredField("newMember");
+        newMemberField.setAccessible(true);
+        newMember = (Member) newMemberField.get(controller);
+
         // Verify that a new member was initialized after successful registration
         assertNotNull(newMember);
         assertEquals(null, newMember.getName());

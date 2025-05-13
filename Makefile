@@ -47,11 +47,15 @@ clean: stop
 
 # Run unit tests
 test:
+	@echo "Validating code style..."
+	mvn checkstyle:check
 	@echo "Running unit tests..."
 	mvn dependency:resolve clean test
 
 # Run unit tests with code coverage
 test-coverage:
+	@echo "Validating code style..."
+	mvn checkstyle:check
 	@echo "Running unit tests with JaCoCo code coverage..."
 	mvn dependency:resolve clean test jacoco:report
 
