@@ -7,6 +7,8 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -54,6 +56,10 @@ public class MemberRegistrationAcceptanceTest {
             name = name.substring(0, 25);
         }
         return name;
+    }
+
+    private String generateUniqueEmail() {
+        return "testuser_" + System.currentTimeMillis() + "@example.com";
     }
 
     @Test
@@ -125,5 +131,117 @@ public class MemberRegistrationAcceptanceTest {
         assertTrue(foundMember.get("id") instanceof Number || foundMember.get("id").toString().matches("\\d+"), "Member ID should be a number.");
 
         System.out.println("Successfully registered and verified member: " + foundMember);
+    }
+
+    // --- Validation Failure Tests --- 
+
+    @Test
+    @Order(2)
+    public void testRegisterMemberWithInvalidName_TooLong() {
+        // REQ-1.2.1: Member names must be between 1 and 25 characters
+        String invalidName = "ThisNameIsDefinitelyMuchTooLongForTheValidationCriteria"; // > 25 chars
+        JsonObject payload = Json.createObjectBuilder()
+                .add("name", invalidName)
+                .add("email", generateUniqueEmail())
+                .add("phoneNumber", generateValidPhoneNumber())
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(payload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(400)
+            .contentType(ContentType.JSON)
+            .body("name", containsString("size must be between 1 and 25")); // Adjust error message if needed
+    }
+
+    @Test
+    @Order(3)
+    public void testRegisterMemberWithInvalidName_ContainsNumbers() {
+        // REQ-1.2.1: Member names must not contain numbers
+        String invalidName = "NameWith123Numbers";
+        JsonObject payload = Json.createObjectBuilder()
+                .add("name", invalidName)
+                .add("email", generateUniqueEmail())
+                .add("phoneNumber", generateValidPhoneNumber())
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(payload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(400)
+            .contentType(ContentType.JSON)
+            .body("name", equalTo("Must not contain numbers"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"plainaddress", "@missingusername.com", "username@.com", "username@domain."})
+    @Order(4)
+    public void testRegisterMemberWithInvalidEmailFormat(String invalidEmail) {
+        // REQ-1.2.2: Email addresses must be valid according to standard email format validation.
+        JsonObject payload = Json.createObjectBuilder()
+                .add("name", generateValidName())
+                .add("email", invalidEmail)
+                .add("phoneNumber", generateValidPhoneNumber())
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(payload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(400)
+            .contentType(ContentType.JSON)
+            .body("email", containsString("must be a well-formed email address")); // Common Bean Validation message for @Email
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"12345", "123456789", "1234567890123"}) // Too short (<10) and too long (>12)
+    @Order(5)
+    public void testRegisterMemberWithInvalidPhoneNumber_Length(String invalidPhone) {
+        // REQ-1.2.3: Phone numbers must be between 10 and 12 digits
+        JsonObject payload = Json.createObjectBuilder()
+                .add("name", generateValidName())
+                .add("email", generateUniqueEmail())
+                .add("phoneNumber", invalidPhone)
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(payload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(400)
+            .contentType(ContentType.JSON)
+            .body("phoneNumber", containsString("size must be between 10 and 12")); // Adjust if needed
+    }
+
+    @Test
+    @Order(6)
+    public void testRegisterMemberWithInvalidPhoneNumber_NonNumeric() {
+        // REQ-1.2.3: Phone numbers must contain only numeric characters
+        String invalidPhone = "123-456-7890";
+        JsonObject payload = Json.createObjectBuilder()
+                .add("name", generateValidName())
+                .add("email", generateUniqueEmail())
+                .add("phoneNumber", invalidPhone)
+                .build();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(payload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(400)
+            .contentType(ContentType.JSON)
+            .body("phoneNumber", equalTo("numeric value out of bounds (<12 digits>.<0 digits> expected)"));
     }
 }
