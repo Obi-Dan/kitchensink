@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package
 
-FROM quay.io/wildfly/wildfly:28.0.1.Final-jdk11
+FROM quay.io/wildfly/wildfly:32.0.1.Final-jdk21
 
 # Copy the built war file to the deployments directory
 COPY --from=builder /app/target/kitchensink.war /opt/jboss/wildfly/standalone/deployments/

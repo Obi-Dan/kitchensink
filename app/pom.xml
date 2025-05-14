@@ -43,9 +43,33 @@
     </licenses>
 
     <properties>
-        <!-- The versions for BOMs, Dependencies and Plugins -->
+        <!-- Explicitly declaring the source encoding eliminates the following
+            message: -->
+        <!-- [WARNING] Using platform encoding (UTF-8 actually) to copy filtered
+            resources, i.e. build is platform dependent! -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Present JBoss EAP Maven GAVs for RESTEasy module -->
+        <version.resteasy>6.2.8.Final-redhat-00001</version.resteasy>
+
+        <!-- Other JBoss EAP version variables -->
         <version.server.bom>8.0.0.GA-redhat-00009</version.server.bom>
-        <version.eap.maven.plugin>1.0.0.Final-redhat-00014</version.eap.maven.plugin>
+        <!-- Explicitly specify the version of the JBoss Java EE APIs we want to import. -->
+        <version.jboss.spec.javaee.8.0>1.0.0.Final</version.jboss.spec.javaee.8.0>
+
+        <!-- other plugin versions -->
+        <version.compiler.plugin>3.13.0</version.compiler.plugin>
+        <version.war.plugin>3.4.0</version.war.plugin>
+        <version.surefire.plugin>3.2.5</version.surefire.plugin>
+        <version.failsafe.plugin>3.2.5</version.failsafe.plugin>
+        <version.wildfly.plugin>4.2.2.Final</version.wildfly.plugin>
+
+        <!-- maven-compiler-plugin -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+        <!-- JaCoCo -->
+        <version.jacoco>0.8.12</version.jacoco>
     </properties>
 
     <repositories>
@@ -283,11 +307,31 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${version.compiler.plugin}</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <release>${maven.compiler.release}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.hibernate.orm</groupId>
+                            <artifactId>hibernate-jpamodelgen</artifactId>
+                        </path>
+                        <path>
+                            <groupId>org.hibernate.validator</groupId>
+                            <artifactId>hibernate-validator-annotation-processor</artifactId>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <!-- JaCoCo plugin for code coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
+                <version>${version.jacoco}</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

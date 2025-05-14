@@ -19,7 +19,6 @@ package org.jboss.as.quickstarts.kitchensink.rest;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -75,7 +74,7 @@ public class MemberResourceRESTService {
     @Path("/{id:[0-9][0-9]*}")
     @Produces(MediaType.APPLICATION_JSON)
     public Member lookupMemberById(@PathParam("id") long id) {
-        Member member = repository.findById(id);
+        var member = repository.findById(id);
         if (member == null) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
@@ -90,9 +89,6 @@ public class MemberResourceRESTService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createMember(Member member) {
-
-        Response.ResponseBuilder builder = null;
-
         try {
             // Validates member using bean validation
             validateMember(member);
@@ -100,23 +96,21 @@ public class MemberResourceRESTService {
             registration.register(member);
 
             // Create an "ok" response
-            builder = Response.ok();
+            return Response.ok().build();
         } catch (ConstraintViolationException ce) {
             // Handle bean validation issues
-            builder = createViolationResponse(ce.getConstraintViolations());
+            return createViolationResponse(ce.getConstraintViolations()).build();
         } catch (ValidationException e) {
             // Handle the unique constrain violation
-            Map<String, String> responseObj = new HashMap<>();
+            var responseObj = new HashMap<String, String>();
             responseObj.put("email", "Email taken");
-            builder = Response.status(Response.Status.CONFLICT).entity(responseObj);
+            return Response.status(Response.Status.CONFLICT).entity(responseObj).build();
         } catch (Exception e) {
             // Handle generic exceptions
-            Map<String, String> responseObj = new HashMap<>();
+            var responseObj = new HashMap<String, String>();
             responseObj.put("error", e.getMessage());
-            builder = Response.status(Response.Status.BAD_REQUEST).entity(responseObj);
+            return Response.status(Response.Status.BAD_REQUEST).entity(responseObj).build();
         }
-
-        return builder.build();
     }
 
     /**
@@ -135,7 +129,7 @@ public class MemberResourceRESTService {
      */
     private void validateMember(Member member) throws ConstraintViolationException, ValidationException {
         // Create a bean validator and check for issues.
-        Set<ConstraintViolation<Member>> violations = validator.validate(member);
+        var violations = validator.validate(member);
 
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(new HashSet<>(violations));
@@ -155,11 +149,11 @@ public class MemberResourceRESTService {
      * @return JAX-RS response containing all violations
      */
     private Response.ResponseBuilder createViolationResponse(Set<ConstraintViolation<?>> violations) {
-        log.fine("Validation completed. violations found: " + violations.size());
+        log.log(java.util.logging.Level.FINE, "Validation completed. Violations found: {0}", violations.size());
 
-        Map<String, String> responseObj = new HashMap<>();
+        var responseObj = new HashMap<String, String>();
 
-        for (ConstraintViolation<?> violation : violations) {
+        for (var violation : violations) {
             responseObj.put(violation.getPropertyPath().toString(), violation.getMessage());
         }
 
@@ -173,7 +167,7 @@ public class MemberResourceRESTService {
      * @param email The email to check
      * @return True if the email already exists, and false otherwise
      */
-    public boolean emailAlreadyExists(String email) {
+    private boolean emailAlreadyExists(String email) {
         Member member = null;
         try {
             member = repository.findByEmail(email);
