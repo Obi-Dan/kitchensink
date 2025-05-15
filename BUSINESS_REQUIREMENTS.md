@@ -33,6 +33,13 @@ The KitchenSink application is a web-enabled database application that demonstra
 - **REQ-2.1.2:** The web interface shall implement form validation to ensure data integrity.
 - **REQ-2.1.3:** The web interface shall display current members in a tabular format.
 - **REQ-2.1.4:** The web interface shall clearly display validation errors to the user.
+- **REQ-2.1.5:** The UI shall present a form for member registration with input fields for Name, Email, and Phone Number, and a "Register" button.
+- **REQ-2.1.6:** The UI shall display validation messages clearly next to the respective input fields upon validation failure during registration.
+- **REQ-2.1.7:** The UI shall display a global success or error message after a registration attempt.
+- **REQ-2.1.8:** The UI shall display a table listing all registered members, including columns for Member ID, Name, Email, and Phone Number.
+- **REQ-2.1.9:** If no members are registered, the UI shall display a message indicating this (e.g., "No registered members.").
+- **REQ-2.1.10:** Each row in the member table shall include a clickable REST URL link specific to that member.
+- **REQ-2.1.11:** The UI shall display a general REST URL link to access all members, typically associated with the members table.
 
 ### 3. REST API
 
