@@ -125,15 +125,15 @@ ui-test:
 	@echo "Waiting for application to start..."
 	@timeout_seconds=120; \
 	start_time=$$(date +%s); \
-	while ! curl -s -f http://localhost:8080/kitchensink/ > /dev/null; do \
+	while ! curl -s -f http://localhost:8080/kitchensink/actuator/health > /dev/null; do \
 		current_time=$$(date +%s); \
 		elapsed_time=$$((current_time - start_time)); \
 		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
 			echo "Application failed to start within $$timeout_seconds seconds."; \
-			docker-compose logs wildfly && docker-compose down; \
+			docker-compose logs app && docker-compose down; \
 			exit 1; \
 		fi; \
-		echo "Still waiting for app (http://localhost:8080/kitchensink/)... $$elapsed_time/$$timeout_seconds s"; \
+		echo "Still waiting for app (http://localhost:8080/kitchensink/actuator/health)... $$elapsed_time/$$timeout_seconds s"; \
 		sleep 5; \
 	done
 	@echo "Application started!"

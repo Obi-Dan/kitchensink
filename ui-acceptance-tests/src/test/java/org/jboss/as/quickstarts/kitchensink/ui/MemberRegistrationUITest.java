@@ -85,12 +85,13 @@ public class MemberRegistrationUITest {
     @DisplayName("Should register a new member successfully and see them in the list")
     void testRegisterNewMember() {
         page.navigate(appUrl);
+        page.locator("text=Register New Member").click(); // Click link to navigate to registration form
 
         // REQ-2.1.5: Form for member registration
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("id=name"); // Updated locator
+        Locator emailInput = page.locator("id=email"); // Updated locator
+        Locator phoneInput = page.locator("id=phoneNumber"); // Updated locator
+        Locator registerButton = page.locator("input.register"); // Updated locator for <input type="submit" class="register">
 
         assertThat(nameInput).isVisible();
         assertThat(emailInput).isVisible();
@@ -138,11 +139,12 @@ public class MemberRegistrationUITest {
     @DisplayName("Should show validation errors for invalid input")
     void testRegistrationValidationErrors() {
         page.navigate(appUrl);
+        page.locator("text=Register New Member").click(); // Click link to navigate to registration form
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("id=name"); // Updated locator
+        Locator emailInput = page.locator("id=email"); // Updated locator
+        Locator phoneInput = page.locator("id=phoneNumber"); // Updated locator
+        Locator registerButton = page.locator("input.register"); // Updated locator
 
         nameInput.fill("ThisNameIsWayTooLongAndInvalid1234567890");
         emailInput.fill("notanemail");
@@ -158,16 +160,18 @@ public class MemberRegistrationUITest {
         // assertThat(nameMessage).containsText("size must be between 1 and 25");
 
         // For email (REQ-1.2.2)
-        // Assuming input is in a <td>, message is in the next <td> which is a sibling of the input's parent <td>.
-        Locator emailMessageCell = page.locator("id=reg:email").locator("xpath=../following-sibling::td[1]");
-        Locator emailMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // Corrected to use xpath=
+        // Assuming input is in a <td>, message is in the next <td> which is a sibling of the input\'s parent <td>.
+        // Locator emailMessageCell = page.locator("id=reg:email").locator("xpath=../following-sibling::td[1]");
+        // Locator emailMessage = emailMessageCell.locator("xpath=./span[contains(@class, \'invalid\')]"); // Corrected to use xpath=
+        Locator emailMessage = page.locator("input#email + span.invalid"); // Updated locator
         assertThat(emailMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         assertThat(emailMessage).containsText("must be a well-formed email address");
 
         // For phone (REQ-1.2.3)
         // Assuming input is in a <td>, message is in the next <td>.
-        Locator phoneMessageCell = page.locator("id=reg:phoneNumber").locator("xpath=../following-sibling::td[1]");
-        Locator phoneMessage = phoneMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
+        // Locator phoneMessageCell = page.locator("id=reg:phoneNumber").locator("xpath=../following-sibling::td[1]");
+        // Locator phoneMessage = phoneMessageCell.locator("xpath=./span[contains(@class, \'invalid\')]");
+        Locator phoneMessage = page.locator("input#phoneNumber + span.invalid"); // Updated locator
         assertThat(phoneMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         
         // Handle oscillating phone validation message

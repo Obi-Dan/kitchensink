@@ -36,6 +36,16 @@ public final class MemberWebController {
   @Autowired private MemberRegistration memberRegistration; // Injecting the service
 
   /**
+   * Redirects the root path "/" to the "/members" page.
+   *
+   * @return A redirect string to the members list.
+   */
+  @GetMapping("/")
+  public String redirectToMembers() {
+    return REDIRECT_MEMBERS_VIEW;
+  }
+
+  /**
    * Displays a list of all registered members. The view "members.html" will be rendered.
    *
    * @param model The Spring UI model.
