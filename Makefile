@@ -1,4 +1,4 @@
-.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all
+.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir
 
 # Default target
 help:
@@ -14,7 +14,9 @@ help:
 	@echo "  make test-coverage   - Run application unit tests with code coverage (includes style check)"
 	@echo "  make test-report     - Open the application's coverage report in a browser"
 	@echo "  make acceptance-test - Start app, run acceptance tests, then stop app"
-	@echo "  make test-all        - Run all tests (unit, coverage, and acceptance tests)"
+	@echo "  make ui-test         - Start app, run UI acceptance tests (with video), then stop app"
+	@echo "  make test-all        - Run all tests (unit, coverage, acceptance, UI)"
+	@echo "  make open-video-dir  - Open the UI test video recording directory"
 	@echo "  make help            - Show this help message"
 	@echo ""
 
@@ -99,9 +101,47 @@ acceptance-test:
 	@echo "Running acceptance tests from acceptance-tests/ directory..."
 	cd acceptance-tests && mvn test
 	@echo "Stopping application after acceptance tests (docker-compose.yml in root)..."
-	docker-compose down
+	docker-compose down -v
 	@echo "Acceptance tests finished."
 
+# Run UI acceptance tests
+ui-test:
+	@echo "Cleaning up old UI test videos..."
+	rm -rf ui-acceptance-tests/target/videos/*
+	@echo "Starting application for UI acceptance tests (docker-compose.yml in root)..."
+	docker-compose up -d
+	@echo "Waiting for application to start..."
+	@timeout_seconds=120; \
+	start_time=$$(date +%s); \
+	while ! curl -s -f http://localhost:8080/kitchensink/ > /dev/null; do \
+		current_time=$$(date +%s); \
+		elapsed_time=$$((current_time - start_time)); \
+		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
+			echo "Application failed to start within $$timeout_seconds seconds."; \
+			docker-compose logs wildfly && docker-compose down; \
+			exit 1; \
+		fi; \
+		echo "Still waiting for app (http://localhost:8080/kitchensink/)... $$elapsed_time/$$timeout_seconds s"; \
+		sleep 5; \
+	done
+	@echo "Application started!"
+	@echo "Running UI acceptance tests from ui-acceptance-tests/ directory..."
+	(cd ui-acceptance-tests && mvn test)
+	@echo "Stopping application after UI acceptance tests (docker-compose.yml in root)..."
+	docker-compose down -v
+	@echo "UI Acceptance tests finished. Videos saved in ui-acceptance-tests/target/videos/"
+
+# Open the UI test video directory
+open-video-dir:
+	@echo "Opening UI test video directory: ui-acceptance-tests/target/videos/ ..."
+	@if [ "$(shell uname)" = "Darwin" ]; then \
+		open ui-acceptance-tests/target/videos/; \
+	elif [ "$(shell uname)" = "Linux" ]; then \
+		xdg-open ui-acceptance-tests/target/videos/; \
+	else \
+		echo "Please open ui-acceptance-tests/target/videos/ in your file browser."; \
+	fi
+
 # Run all tests
-test-all: test-coverage acceptance-test
-	@echo "All tests (unit, coverage, acceptance) completed." 
+test-all: test-coverage acceptance-test ui-test
+	@echo "All tests (unit, coverage, acceptance, UI) completed." 
