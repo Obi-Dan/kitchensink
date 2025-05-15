@@ -2,12 +2,14 @@ package org.jboss.as.quickstarts.kitchensink.ui;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.RecordVideoSize;
+import com.microsoft.playwright.assertions.LocatorAssertions;
 import org.junit.jupiter.api.*;
 
+import java.io.File; // For checking file size
 import java.nio.file.Paths;
+import java.nio.file.Path; // For Path object
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import com.microsoft.playwright.assertions.LocatorAssertions;
 
 public class MemberRegistrationUITest {
 
@@ -25,13 +27,18 @@ public class MemberRegistrationUITest {
     static void launchBrowser() {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                // .setHeadless(false) // Uncomment to view test execution
+                .setHeadless(false) // Run in non-headless mode for diagnostics
         );
     }
 
     @AfterAll
     static void closeBrowser() {
-        playwright.close();
+        if (browser != null) {
+            browser.close();
+        }
+        if (playwright != null) {
+            playwright.close();
+        }
     }
 
     @BeforeEach
@@ -45,14 +52,33 @@ public class MemberRegistrationUITest {
 
     @AfterEach
     void closeContext() {
-        // Save video before closing context
-        // The video path will be something like: target/videos/02680724-9a18-4149-8b83-73c5280537dd-page-0.webm
-        // The name is random; Playwright doesn't allow custom naming from this API directly for individual tests
-        // Videos are saved automatically on context.close() if a page has been created.
-        String videoPath = page.video().path().toString();
-        context.close(); // This saves the video.
-        System.out.println("Video saved to: " + videoPath);
+        Path videoPath = null;
+        // Ensure page and video objects are valid before trying to access path
+        if (page != null && !page.isClosed()) {
+            Video video = page.video();
+            if (video != null) {
+                try {
+                    videoPath = video.path(); // Get the path where the video will be saved
+                } catch (PlaywrightException e) {
+                    System.err.println("Could not get video path before context close: " + e.getMessage());
+                }
+            }
+        }
 
+        if (context != null) {
+            context.close(); // This is when the video is actually written to disk and finalized.
+        }
+
+        if (videoPath != null) {
+            File videoFile = videoPath.toFile();
+            if (videoFile.exists()) {
+                System.out.println("Video artifact found at: " + videoPath + ", Size: " + videoFile.length() + " bytes");
+            } else {
+                System.out.println("Video artifact expected at: " + videoPath + " but was NOT found after context close.");
+            }
+        } else {
+            System.out.println("Video path was not available. No video saved or path could not be determined.");
+        }
     }
 
     @Test
@@ -104,6 +130,8 @@ public class MemberRegistrationUITest {
 
         // REQ-2.1.6: Validation messages (test for this in a separate test method)
         // REQ-2.1.10 & REQ-2.1.11: REST URL links (can be verified by checking href attributes if needed)
+
+        page.waitForTimeout(2000); // Add a 2-second pause for video recording
     }
 
     @Test
@@ -148,5 +176,7 @@ public class MemberRegistrationUITest {
                                       actualPhoneMessageText.contains("numeric value out of bounds (<12 digits>.<0 digits> expected)");
         Assertions.assertTrue(isValidPhoneMessage, 
             "Phone validation message '" + actualPhoneMessageText + "' did not match expected options.");
+
+        page.waitForTimeout(1000); // Shorter pause for this test
     }
 } 
