@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Members</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/screen.css}"/>
+</head>
+<body>
+    <div id="container">
+        <h1>Registered Members</h1>
+        <div th:if="${successMessage}" class="alert alert-success">
+            <p th:text="${successMessage}">Success!</p>
+        </div>
+        <div th:if="${members.isEmpty()}">
+            <p>No members registered.</p>
+        </div>
+        <table class="simpletablestyle" th:unless="${members.isEmpty()}">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="member : ${members}">
+                    <td th:text="${member.id}">1</td>
+                    <td th:text="${member.name}">John Doe</td>
+                    <td th:text="${member.email}">john.doe@example.com</td>
+                    <td th:text="${member.phoneNumber}">123-456-7890</td>
+                </tr>
+            </tbody>
+        </table>
+        <p><a th:href="@{/register}">Register New Member</a></p>
+        <p><a th:href="@{/}">Back to Home</a></p> <!-- Assuming a home page at / eventually -->
+    </div>
+</body>
+</html> 

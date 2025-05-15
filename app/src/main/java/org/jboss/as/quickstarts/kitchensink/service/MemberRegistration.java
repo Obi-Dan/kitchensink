@@ -16,30 +16,80 @@
  */
 package org.jboss.as.quickstarts.kitchensink.service;
 
-import org.jboss.as.quickstarts.kitchensink.model.Member;
-
-import jakarta.ejb.Stateless;
-import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import java.util.logging.Logger;
+import jakarta.persistence.PersistenceContext;
+import org.jboss.as.quickstarts.kitchensink.model.Member;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// The @Stateless annotation eliminates the need for manual transaction demarcation
-@Stateless
-public class MemberRegistration {
+// Commented out original EE imports:
+// import jakarta.ejb.Stateless; // Replaced by @Service and @Transactional
+// import jakarta.enterprise.event.Event; // Replaced by Spring ApplicationEventPublisher
+// import jakarta.inject.Inject; // Replaced by @Autowired
 
-    @Inject
-    private Logger log;
+/**
+ * Represents an event published when a new member is registered. This class is a placeholder and
+ * could be made more specific.
+ */
+class MemberRegisteredEvent extends org.springframework.context.ApplicationEvent {
+  /** The member that was registered. */
+  private final Member member;
 
-    @Inject
-    private EntityManager em;
+  /**
+   * Constructs a new MemberRegisteredEvent.
+   *
+   * @param source The component that published the event (i.e., {@link MemberRegistration}).
+   * @param registeredMember The member that was registered.
+   */
+  MemberRegisteredEvent(final Object source, final Member registeredMember) {
+    super(source);
+    this.member = registeredMember;
+  }
 
-    @Inject
-    private Event<Member> memberEventSrc;
+  /**
+   * Gets the registered member.
+   *
+   * @return The registered member.
+   */
+  public Member getMember() {
+    return member;
+  }
+}
 
-    public void register(Member member) throws Exception {
-        log.info("Registering " + member.getName());
-        em.persist(member);
-        memberEventSrc.fire(member);
-    }
+/**
+ * Service class for registering new members.
+ *
+ * <p>This service handles the business logic for member registration, including persisting the
+ * member and publishing an event.
+ */
+@Service
+public class MemberRegistration implements MemberRegistrationService {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MemberRegistration.class);
+
+  /** The JPA EntityManager for database interactions. */
+  @PersistenceContext private EntityManager em;
+
+  /** The Spring ApplicationEventPublisher for publishing events. */
+  @Autowired private ApplicationEventPublisher applicationEventPublisher;
+
+  /**
+   * Registers a new member.
+   *
+   * <p>This method persists the member to the database and publishes a {@link
+   * MemberRegisteredEvent}.
+   *
+   * @param member The member to register.
+   */
+  @Transactional
+  @Override
+  public void register(final Member member) {
+    LOGGER.info("Registering " + member.getName());
+    em.persist(member);
+    applicationEventPublisher.publishEvent(new MemberRegisteredEvent(this, member));
+  }
 }

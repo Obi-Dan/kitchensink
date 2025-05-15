@@ -16,170 +16,153 @@
  */
 package org.jboss.as.quickstarts.kitchensink.rest;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
-
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
-import jakarta.persistence.NoResultException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import jakarta.validation.Validator;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.jboss.as.quickstarts.kitchensink.data.MemberRepository;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
-import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration;
+import org.jboss.as.quickstarts.kitchensink.service.MemberRegistrationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
- * JAX-RS Example
- * <p/>
- * This class produces a RESTful service to read/write the contents of the members table.
+ * RESTful service for member registration and retrieval.
+ *
+ * <p>This class provides endpoints to interact with the members data.
  */
-@Path("/members")
-@RequestScoped
+@RestController
+@RequestMapping("/rest/members")
 public class MemberResourceRESTService {
 
-    @Inject
-    private Logger log;
+  /** Logger for this class. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(MemberResourceRESTService.class);
 
-    @Inject
-    private Validator validator;
+  /** JSR-303 validator instance. */
+  @Autowired private Validator validator;
 
-    @Inject
-    private MemberRepository repository;
+  /** Repository for member data access. */
+  @Autowired private MemberRepository repository;
 
-    @Inject
-    MemberRegistration registration;
+  /** Service for member registration logic. */
+  @Autowired private MemberRegistrationService registration;
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Member> listAllMembers() {
-        return repository.findAllOrderedByName();
+  /**
+   * Lists all registered members, ordered by name.
+   *
+   * @return A list of all members.
+   */
+  @GetMapping
+  public List<Member> listAllMembers() {
+    return repository.findAllByOrderByNameAsc();
+  }
+
+  /**
+   * Looks up a member by their ID.
+   *
+   * @param id The ID of the member to look up.
+   * @return The found member.
+   * @throws ResponseStatusException if no member is found with the given ID.
+   */
+  @GetMapping("/{id:[0-9]+}")
+  public Member lookupMemberById(@PathVariable("id") final long id) {
+    return repository
+        .findById(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Member not found"));
+  }
+
+  /**
+   * Creates a new member.
+   *
+   * <p>Validates the member data and then registers the member. Returns different HTTP status codes
+   * based on the outcome.
+   *
+   * @param member The member data from the request body.
+   * @return ResponseEntity indicating success, validation failure, or other errors.
+   */
+  @PostMapping
+  public ResponseEntity<?> createMember(@RequestBody final Member member) {
+    try {
+      validateMember(member);
+      registration.register(member);
+      return ResponseEntity.ok().build();
+    } catch (ConstraintViolationException ce) {
+      return ResponseEntity.badRequest()
+          .body(buildValidationResponse(ce.getConstraintViolations()));
+    } catch (ValidationException e) {
+      var responseObj = new HashMap<String, String>();
+      responseObj.put("email", "Email taken");
+      return ResponseEntity.status(HttpStatus.CONFLICT)
+          .body(Collections.unmodifiableMap(responseObj));
+    } catch (Exception e) {
+      LOGGER.error("Unexpected error during member creation: ", e);
+      var responseObj = new HashMap<String, String>();
+      responseObj.put("error", "An unexpected error occurred: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(Collections.unmodifiableMap(responseObj));
     }
+  }
 
-    @GET
-    @Path("/{id:[0-9][0-9]*}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Member lookupMemberById(@PathParam("id") long id) {
-        Member member = repository.findById(id);
-        if (member == null) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        }
-        return member;
+  /**
+   * Validates the given member.
+   *
+   * @param member The member to validate.
+   * @throws ConstraintViolationException if validation rules are violated.
+   * @throws ValidationException if the email already exists.
+   */
+  private void validateMember(final Member member)
+      throws ConstraintViolationException, ValidationException {
+    final Set<ConstraintViolation<Member>> violations = validator.validate(member);
+    if (!violations.isEmpty()) {
+      throw new ConstraintViolationException(violations);
     }
-
-    /**
-     * Creates a new member from the values provided. Performs validation, and will return a JAX-RS response with either 200 ok,
-     * or with a map of fields, and related errors.
-     */
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response createMember(Member member) {
-
-        Response.ResponseBuilder builder = null;
-
-        try {
-            // Validates member using bean validation
-            validateMember(member);
-
-            registration.register(member);
-
-            // Create an "ok" response
-            builder = Response.ok();
-        } catch (ConstraintViolationException ce) {
-            // Handle bean validation issues
-            builder = createViolationResponse(ce.getConstraintViolations());
-        } catch (ValidationException e) {
-            // Handle the unique constrain violation
-            Map<String, String> responseObj = new HashMap<>();
-            responseObj.put("email", "Email taken");
-            builder = Response.status(Response.Status.CONFLICT).entity(responseObj);
-        } catch (Exception e) {
-            // Handle generic exceptions
-            Map<String, String> responseObj = new HashMap<>();
-            responseObj.put("error", e.getMessage());
-            builder = Response.status(Response.Status.BAD_REQUEST).entity(responseObj);
-        }
-
-        return builder.build();
+    if (emailAlreadyExists(member.getEmail())) {
+      throw new ValidationException("Unique Email Violation");
     }
+  }
 
-    /**
-     * <p>
-     * Validates the given Member variable and throws validation exceptions based on the type of error. If the error is standard
-     * bean validation errors then it will throw a ConstraintValidationException with the set of the constraints violated.
-     * </p>
-     * <p>
-     * If the error is caused because an existing member with the same email is registered it throws a regular validation
-     * exception so that it can be interpreted separately.
-     * </p>
-     *
-     * @param member Member to be validated
-     * @throws ConstraintViolationException If Bean Validation errors exist
-     * @throws ValidationException If member with the same email already exists
-     */
-    private void validateMember(Member member) throws ConstraintViolationException, ValidationException {
-        // Create a bean validator and check for issues.
-        Set<ConstraintViolation<Member>> violations = validator.validate(member);
+  /**
+   * Builds a response map from a set of constraint violations.
+   *
+   * @param violations The set of constraint violations.
+   * @return A map where keys are property paths and values are violation messages.
+   */
+  private Map<String, String> buildValidationResponse(
+      final Set<ConstraintViolation<?>> violations) {
+    LOGGER.trace("Validation completed. violations found: " + violations.size());
+    var errorMap =
+        violations.stream()
+            .collect(
+                Collectors.toMap(
+                    viol -> viol.getPropertyPath().toString(),
+                    ConstraintViolation::getMessage,
+                    (existingMessage, newMessage) -> existingMessage + "; " + newMessage));
+    return Collections.unmodifiableMap(errorMap);
+  }
 
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(new HashSet<>(violations));
-        }
-
-        // Check the uniqueness of the email address
-        if (emailAlreadyExists(member.getEmail())) {
-            throw new ValidationException("Unique Email Violation");
-        }
-    }
-
-    /**
-     * Creates a JAX-RS "Bad Request" response including a map of all violation fields, and their message. This can then be used
-     * by clients to show violations.
-     *
-     * @param violations A set of violations that needs to be reported
-     * @return JAX-RS response containing all violations
-     */
-    private Response.ResponseBuilder createViolationResponse(Set<ConstraintViolation<?>> violations) {
-        log.fine("Validation completed. violations found: " + violations.size());
-
-        Map<String, String> responseObj = new HashMap<>();
-
-        for (ConstraintViolation<?> violation : violations) {
-            responseObj.put(violation.getPropertyPath().toString(), violation.getMessage());
-        }
-
-        return Response.status(Response.Status.BAD_REQUEST).entity(responseObj);
-    }
-
-    /**
-     * Checks if a member with the same email address is already registered. This is the only way to easily capture the
-     * "@UniqueConstraint(columnNames = "email")" constraint from the Member class.
-     *
-     * @param email The email to check
-     * @return True if the email already exists, and false otherwise
-     */
-    public boolean emailAlreadyExists(String email) {
-        Member member = null;
-        try {
-            member = repository.findByEmail(email);
-        } catch (NoResultException e) {
-            // ignore
-        }
-        return member != null;
-    }
+  /**
+   * Checks if an email address already exists in the repository.
+   *
+   * @param email The email address to check.
+   * @return True if the email exists, false otherwise.
+   */
+  public boolean emailAlreadyExists(final String email) {
+    return repository.findByEmail(email).isPresent();
+  }
 }

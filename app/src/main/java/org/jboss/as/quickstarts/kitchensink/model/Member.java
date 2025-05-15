@@ -16,8 +16,6 @@
  */
 package org.jboss.as.quickstarts.kitchensink.model;
 
-import java.io.Serializable;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -25,69 +23,124 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
-
+/**
+ * Represents a member entity with contact information. This class is a JPA entity and is also used
+ * for JAXB marshalling.
+ */
 @SuppressWarnings("serial")
 @Entity
 @XmlRootElement
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = "email"))
 public class Member implements Serializable {
 
-    @Id
-    @GeneratedValue
-    private Long id;
+  /** Maximum size for a member's name. */
+  private static final int NAME_MAX_SIZE = 25;
 
-    @NotNull
-    @Size(min = 1, max = 25)
-    @Pattern(regexp = "[^0-9]*", message = "Must not contain numbers")
-    private String name;
+  /** Minimum size for a member's phone number. */
+  private static final int PHONE_MIN_SIZE = 10;
 
-    @NotNull
-    @NotEmpty
-    @Email
-    private String email;
+  /** Maximum size for a member's phone number. */
+  private static final int PHONE_MAX_SIZE = 12;
 
-    @NotNull
-    @Size(min = 10, max = 12)
-    @Digits(fraction = 0, integer = 12)
-    @Column(name = "phone_number")
-    private String phoneNumber;
+  /** Maximum number of digits for a member's phone number. */
+  private static final int PHONE_MAX_DIGITS = 12;
 
-    public Long getId() {
-        return id;
-    }
+  /** The unique identifier for the member. */
+  @Id @GeneratedValue private Long id;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+  /** The name of the member. Must be between 1 and 25 characters, and contain no numbers. */
+  @NotNull
+  @Size(min = 1, max = NAME_MAX_SIZE)
+  @Pattern(regexp = "[^0-9]*", message = "Must not contain numbers")
+  private String name;
 
-    public String getName() {
-        return name;
-    }
+  /** The email address of the member. Must be a valid email format and unique. */
+  @NotNull @NotEmpty @Email private String email;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  /** The phone number of the member. Must be between 10 and 12 digits. */
+  @NotNull
+  @Size(min = PHONE_MIN_SIZE, max = PHONE_MAX_SIZE)
+  @Digits(fraction = 0, integer = PHONE_MAX_DIGITS)
+  @Column(name = "phone_number")
+  private String phoneNumber;
 
-    public String getEmail() {
-        return email;
-    }
+  /**
+   * Gets the member's ID.
+   *
+   * @return The ID of the member.
+   */
+  public Long getId() {
+    return id;
+  }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+  /**
+   * Sets the member's ID.
+   *
+   * @param id The new ID for the member.
+   */
+  public void setId(final Long id) {
+    this.id = id;
+  }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+  /**
+   * Gets the member's name.
+   *
+   * @return The name of the member.
+   */
+  public String getName() {
+    return name;
+  }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+  /**
+   * Sets the member's name.
+   *
+   * @param name The new name for the member.
+   */
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  /**
+   * Gets the member's email address.
+   *
+   * @return The email address of the member.
+   */
+  public String getEmail() {
+    return email;
+  }
+
+  /**
+   * Sets the member's email address.
+   *
+   * @param email The new email address for the member.
+   */
+  public void setEmail(final String email) {
+    this.email = email;
+  }
+
+  /**
+   * Gets the member's phone number.
+   *
+   * @return The phone number of the member.
+   */
+  public String getPhoneNumber() {
+    return phoneNumber;
+  }
+
+  /**
+   * Sets the member's phone number.
+   *
+   * @param phoneNumber The new phone number for the member.
+   */
+  public void setPhoneNumber(final String phoneNumber) {
+    this.phoneNumber = phoneNumber;
+  }
 }

@@ -1,27 +1,24 @@
 version: '3.8'
 
 services:
-  wildfly:
+  app:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: kitchensink-app
+    container_name: kitchensink-spring-boot-app
     ports:
       - "8080:8080"  # Web interface
-      - "9990:9990"  # Admin console
     networks:
       - kitchensink-network
     environment:
       - JAVA_OPTS=-Xms512m -Xmx1024m
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/kitchensink"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      test: ["CMD", "curl", "-f", "http://localhost:8080/kitchensink/actuator/health"]
+      interval: 10s
+      timeout: 5s
     restart: unless-stopped
-    volumes:
-      - wildfly-logs:/opt/jboss/wildfly/standalone/log
+    # volumes:
+      # - app-logs:/app/logs
 
 networks:
   kitchensink-network:
@@ -31,5 +28,5 @@ networks:
       config:
         - subnet: 172.28.0.0/16
 
-volumes:
-  wildfly-logs: 
+# volumes:
+  # app-logs: 

@@ -23,10 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import okhttp3.OkHttpClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class MemberRegistrationAcceptanceTest {
 
     private static final String BASE_URL = "http://localhost:8080/kitchensink/rest/members";
     private static Random random = new Random();
+    private static final OkHttpClient client = new OkHttpClient();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeAll
     public static void setup() {

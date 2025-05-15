@@ -1,4 +1,4 @@
-.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help
+.PHONY: build run stop logs clean format test test-coverage test-report acceptance-test help
 
 # Default target
 help:
@@ -10,8 +10,9 @@ help:
 	@echo "  make stop            - Stop the running application"
 	@echo "  make logs            - Show application logs"
 	@echo "  make clean           - Remove containers, volumes, and images for the application"
-	@echo "  make test            - Run application unit tests (includes style check)"
-	@echo "  make test-coverage   - Run application unit tests with code coverage (includes style check)"
+	@echo "  make format          - Format application code using Spotless (in app/ directory)"
+	@echo "  make test            - Run application unit tests (includes style check, auto-formats with Spotless)"
+	@echo "  make test-coverage   - Run application unit tests with code coverage (includes style check, auto-formats with Spotless)"
 	@echo "  make test-report     - Open the application's coverage report in a browser"
 	@echo "  make acceptance-test - Start app, run acceptance tests, then stop app"
 	@echo "  make help            - Show this help message"
@@ -38,7 +39,7 @@ stop:
 # Show application logs
 logs:
 	@echo "Showing Kitchensink application logs (docker-compose.yml in root)..."
-	docker-compose logs -f wildfly
+	docker-compose logs -f app
 
 # Clean up resources
 clean: stop
@@ -46,10 +47,17 @@ clean: stop
 	docker-compose down -v --rmi local
 	@echo "Cleanup complete."
 
+# Format application code
+format:
+	@echo "Formatting application code in app/ directory using Spotless..."
+	(cd app && mvn spotless:apply)
+
 # Run unit tests for the main application
 test:
 	@echo "Running application tests in app/ directory..."
 	(cd app && \
+		echo "Formatting application code..." && \
+		mvn spotless:apply && \
 		echo "Validating application code style..." && \
 		mvn checkstyle:check && \
 		echo "Running application unit tests..." && \
@@ -59,6 +67,8 @@ test:
 test-coverage:
 	@echo "Running application tests with coverage in app/ directory..."
 	(cd app && \
+		echo "Formatting application code..." && \
+		mvn spotless:apply && \
 		echo "Validating application code style..." && \
 		mvn checkstyle:check && \
 		echo "Running application unit tests with JaCoCo code coverage..." && \
@@ -78,20 +88,22 @@ test-report:
 
 # Run acceptance tests
 acceptance-test:
+	@echo "Building application with no cache..."
+	docker-compose build --no-cache app
 	@echo "Starting application for acceptance tests (docker-compose.yml in root)..."
-	docker-compose up -d
+	docker-compose up -d app
 	@echo "Waiting for application to start..."
-	@timeout_seconds=120; \
+	@timeout_seconds=30; \
 	start_time=$$(date +%s); \
-	while ! curl -s -f http://localhost:8080/kitchensink/rest/members > /dev/null; do \
+	while ! curl -s -f http://localhost:8080/kitchensink/actuator/health > /dev/null; do \
 		current_time=$$(date +%s); \
 		elapsed_time=$$((current_time - start_time)); \
 		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
 			echo "Application failed to start within $$timeout_seconds seconds."; \
-			docker-compose logs wildfly && docker-compose down; \
+			docker-compose logs app && docker-compose down; \
 			exit 1; \
 		fi; \
-		echo "Still waiting for app (http://localhost:8080/kitchensink/rest/members)... $$elapsed_time/$$timeout_seconds s"; \
+		echo "Still waiting for app (http://localhost:8080/kitchensink/actuator/health)... $$elapsed_time/$$timeout_seconds s"; \
 		sleep 5; \
 	done
 	@echo "Application started!"

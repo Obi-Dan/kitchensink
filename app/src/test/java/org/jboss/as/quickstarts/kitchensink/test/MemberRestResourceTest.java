@@ -1,179 +1,164 @@
 package org.jboss.as.quickstarts.kitchensink.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.lang.reflect.Field;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
-
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
-import jakarta.validation.executable.ExecutableValidator;
-import jakarta.validation.metadata.BeanDescriptor;
-
+import java.util.Optional;
 import org.jboss.as.quickstarts.kitchensink.data.MemberRepository;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.jboss.as.quickstarts.kitchensink.rest.MemberResourceRESTService;
-import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration;
-import org.junit.Before;
-import org.junit.Test;
+import org.jboss.as.quickstarts.kitchensink.service.MemberRegistrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Simple happy path test for MemberResourceRESTService
- */
+// java.util.logging.Logger
+
+// import jakarta.validation.Validator; // Spring Boot provides this, mock if specific validation
+// behavior is tested
+
+@WebMvcTest(MemberResourceRESTService.class)
 public class MemberRestResourceTest {
 
-    private MemberResourceRESTService restService;
-    private TestMemberRepository repository;
-    private TestMemberRegistration registration;
-    private TestValidator validator;
-    private List<Member> members;
+  @Autowired private MockMvc mockMvc;
 
-    @Before
-    public void setup() throws Exception {
-        // Create the REST service
-        restService = new MemberResourceRESTService();
+  @MockBean private MemberRepository memberRepository;
 
-        // Create test data
-        members = new ArrayList<>();
-        members.add(createMember(1L, "John Doe", "john@example.com", "1234567890"));
-        members.add(createMember(2L, "Jane Doe", "jane@example.com", "0987654321"));
+  @MockBean private MemberRegistrationService memberRegistrationService;
 
-        // Create test dependencies
-        repository = new TestMemberRepository();
-        repository.setMembers(members);
-        registration = new TestMemberRegistration();
-        validator = new TestValidator();
+  // @MockBean // Validator is auto-configured by Spring. Only mock if you need to control its
+  // behavior.
+  // private Validator validator;
 
-        // Inject dependencies via reflection
-        injectDependency(restService, "repository", repository);
-        injectDependency(restService, "registration", registration);
-        injectDependency(restService, "validator", validator);
-        injectDependency(restService, "log", Logger.getLogger(MemberResourceRESTService.class.getName()));
-    }
+  @Autowired private ObjectMapper objectMapper; // For converting objects to JSON strings
 
-    @Test
-    public void testListAllMembers() {
-        // Call the REST method
-        List<Member> returnedMembers = restService.listAllMembers();
+  private List<Member> membersList;
 
-        // Verify the result
-        assertNotNull(returnedMembers);
-        assertEquals(2, returnedMembers.size());
-        assertEquals("John Doe", returnedMembers.get(0).getName());
-        assertEquals("jane@example.com", returnedMembers.get(1).getEmail());
-    }
+  @BeforeEach
+  void setUp() {
+    membersList = new ArrayList<>();
+    membersList.add(createMember(1L, "John Doe", "john@example.com", "1234567890"));
+    membersList.add(createMember(2L, "Jane Doe", "jane@example.com", "0987654321"));
+  }
 
-    @Test
-    public void testLookupMemberById() {
-        // Call the REST method
-        Member member = restService.lookupMemberById(1L);
+  private Member createMember(Long id, String name, String email, String phone) {
+    Member member = new Member();
+    // ID would normally be set by persistence layer, but for test data, we might set it.
+    member.setId(id);
+    member.setName(name);
+    member.setEmail(email);
+    member.setPhoneNumber(phone);
+    return member;
+  }
 
-        // Verify the result
-        assertNotNull(member);
-        assertEquals("John Doe", member.getName());
-        assertEquals("john@example.com", member.getEmail());
-    }
+  @Test
+  public void testListAllMembers() throws Exception {
+    given(memberRepository.findAllByOrderByNameAsc()).willReturn(membersList);
 
-    // Helper method to inject dependencies using reflection
-    private void injectDependency(Object target, String fieldName, Object dependency) throws Exception {
-        Field field = MemberResourceRESTService.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, dependency);
-    }
+    mockMvc
+        .perform(get("/rest/members"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(2)))
+        .andExpect(jsonPath("$[0].name", is("John Doe")))
+        .andExpect(jsonPath("$[1].name", is("Jane Doe")));
+  }
 
-    // Helper method to create a test member
-    private Member createMember(Long id, String name, String email, String phone) {
-        Member member = new Member();
-        member.setId(id);
-        member.setName(name);
-        member.setEmail(email);
-        member.setPhoneNumber(phone);
-        return member;
-    }
+  @Test
+  public void testLookupMemberById_Found() throws Exception {
+    Member member = membersList.get(0);
+    given(memberRepository.findById(1L)).willReturn(Optional.of(member));
 
-    // Test implementation of MemberRepository
-    private static class TestMemberRepository extends MemberRepository {
-        private List<Member> members = new ArrayList<>();
+    mockMvc
+        .perform(get("/rest/members/{id}", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name", is(member.getName())))
+        .andExpect(jsonPath("$.email", is(member.getEmail())));
+  }
 
-        public void setMembers(List<Member> members) {
-            this.members = members;
-        }
+  @Test
+  public void testLookupMemberById_NotFound() throws Exception {
+    given(memberRepository.findById(99L)).willReturn(Optional.empty());
 
-        @Override
-        public List<Member> findAllOrderedByName() {
-            return members;
-        }
+    mockMvc.perform(get("/rest/members/{id}", 99L)).andExpect(status().isNotFound());
+  }
 
-        @Override
-        public Member findById(Long id) {
-            for (Member member : members) {
-                if (id.equals(member.getId())) {
-                    return member;
-                }
-            }
-            return null;
-        }
+  @Test
+  public void testCreateMember_Success() throws Exception {
+    Member newMember = createMember(null, "New Guy", "newguy@example.com", "5550100123");
+    // Mock the registration service if it's called and does something we need to verify beyond
+    // controller logic
+    // For example, if register method returns the persisted member or throws specific exceptions
+    // Mockito.doNothing().when(memberRegistration).register(any(Member.class)); // If void and no
+    // side effects to check here
 
-        @Override
-        public Member findByEmail(String email) {
-            for (Member member : members) {
-                if (email.equals(member.getEmail())) {
-                    return member;
-                }
-            }
-            throw new jakarta.persistence.NoResultException("Email not found: " + email);
-        }
-    }
+    // If MemberRegistration.register is void and we are testing the happy path controlled by the
+    // REST service logic:
+    // The controller calls memberRegistration.register(member) and then returns
+    // ResponseEntity.ok().build();
+    // We assume the validator passes for this happy path test.
 
-    // Test implementation of MemberRegistration
-    private static class TestMemberRegistration extends MemberRegistration {
-        private Member lastRegisteredMember;
+    mockMvc
+        .perform(
+            post("/rest/members")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(newMember)))
+        .andExpect(status().isOk());
 
-        @Override
-        public void register(Member member) throws Exception {
-            this.lastRegisteredMember = member;
-        }
+    // Optionally verify that registration.register was called
+    // Mockito.verify(memberRegistration).register(ArgumentMatchers.any(Member.class));
+  }
 
-        public Member getLastRegisteredMember() {
-            return lastRegisteredMember;
-        }
-    }
+  // Add more tests for createMember (validation errors, conflict, etc.)
+  // For example, test for ConstraintViolationException:
+  // @Test
+  // public void testCreateMember_ValidationError() throws Exception {
+  //     Member invalidMember = createMember(null, "", "notanemail", "short"); // Invalid data
+  //     // You might need to mock the validator if not using @Valid on entity in controller and
+  // relying on manual validation call
+  //     // Set<ConstraintViolation<Member>> violations = new HashSet<>();
+  //     // violations.add(...); // create a mock ConstraintViolation
+  //     // given(validator.validate(any(Member.class))).willReturn(violations);
 
-    // Test implementation of Validator
-    private static class TestValidator implements Validator {
-        @Override
-        public <T> Set<ConstraintViolation<T>> validate(T object, Class<?>... groups) {
-            return new HashSet<>(); // Return empty set - no validation errors
-        }
+  //     mockMvc.perform(post("/api/members")
+  //             .contentType(MediaType.APPLICATION_JSON)
+  //             .content(objectMapper.writeValueAsString(invalidMember)))
+  //             .andExpect(status().isBadRequest())
+  //             .andExpect(jsonPath("$.name").exists()) // Or whatever your error response format
+  // is
+  //             .andExpect(jsonPath("$.email").exists());
+  // }
 
-        @Override
-        public <T> Set<ConstraintViolation<T>> validateProperty(T object, String propertyName, Class<?>... groups) {
-            return new HashSet<>(); // Return empty set - no validation errors
-        }
+  // Test for email already exists (CONFLICT)
+  // @Test
+  // public void testCreateMember_EmailConflict() throws Exception {
+  //     Member existingEmailMember = createMember(null, "Conflict User", "john@example.com",
+  // "1112223333");
+  //     // Assume john@example.com already exists. This check is done by
+  // repository.findByEmail(...).isPresent()
+  //     // in the controller before calling registration.register().
+  //
+  // given(memberRepository.findByEmail("john@example.com")).willReturn(Optional.of(membersList.get(0)));
 
-        @Override
-        public <T> Set<ConstraintViolation<T>> validateValue(Class<T> beanType, String propertyName, Object value, Class<?>... groups) {
-            return new HashSet<>(); // Return empty set - no validation errors
-        }
+  //     // We don't need to mock validator.validate() if the data is otherwise valid
+  //     // Set<ConstraintViolation<Member>> noViolations = new HashSet<>();
+  //     // given(validator.validate(any(Member.class))).willReturn(noViolations);
 
-        @Override
-        public BeanDescriptor getConstraintsForClass(Class<?> clazz) {
-            return null;
-        }
-
-        @Override
-        public <T> T unwrap(Class<T> type) {
-            return null;
-        }
-
-        @Override
-        public ExecutableValidator forExecutables() {
-            return null;
-        }
-    }
+  //     mockMvc.perform(post("/api/members")
+  //             .contentType(MediaType.APPLICATION_JSON)
+  //             .content(objectMapper.writeValueAsString(existingEmailMember)))
+  //             .andExpect(status().isConflict())
+  //             .andExpect(jsonPath("$.email", is("Email taken")));
+  // }
 }
