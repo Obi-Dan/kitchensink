@@ -16,19 +16,16 @@
  */
 package org.jboss.as.quickstarts.kitchensink.util;
 
-import java.util.logging.Logger;
-
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.logging.Logger;
 
 /**
  * This class uses CDI to alias Jakarta EE resources, such as the persistence context, to CDI beans
  *
- * <p>
- * Example injection on a managed bean field:
- * </p>
+ * <p>Example injection on a managed bean field:
  *
  * <pre>
  * &#064;Inject
@@ -36,13 +33,10 @@ import jakarta.persistence.PersistenceContext;
  * </pre>
  */
 public class Resources {
-    @Produces
-    @PersistenceContext
-    private EntityManager em;
+  @Produces @PersistenceContext private EntityManager em;
 
-    @Produces
-    public Logger produceLog(InjectionPoint injectionPoint) {
-        return Logger.getLogger(injectionPoint.getMember().getDeclaringClass().getName());
-    }
-
+  @Produces
+  public Logger produceLog(InjectionPoint injectionPoint) {
+    return Logger.getLogger(injectionPoint.getMember().getDeclaringClass().getName());
+  }
 }
