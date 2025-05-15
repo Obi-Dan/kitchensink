@@ -1,4 +1,4 @@
-.PHONY: build run stop logs clean format test test-coverage test-report acceptance-test help
+.PHONY: build run stop logs clean format test test-coverage test-report acceptance-test help test-all
 
 # Default target
 help:
@@ -15,6 +15,7 @@ help:
 	@echo "  make test-coverage   - Run application unit tests with code coverage (includes style check, auto-formats with Spotless)"
 	@echo "  make test-report     - Open the application's coverage report in a browser"
 	@echo "  make acceptance-test - Start app, run acceptance tests, then stop app"
+	@echo "  make test-all        - Run all tests (unit, coverage, and acceptance tests)"
 	@echo "  make help            - Show this help message"
 	@echo ""
 
@@ -111,4 +112,8 @@ acceptance-test:
 	cd acceptance-tests && mvn test
 	@echo "Stopping application after acceptance tests (docker-compose.yml in root)..."
 	docker-compose down
-	@echo "Acceptance tests finished." 
+	@echo "Acceptance tests finished."
+
+# Run all tests
+test-all: test-coverage acceptance-test
+	@echo "All tests (unit, coverage, acceptance) completed." 
