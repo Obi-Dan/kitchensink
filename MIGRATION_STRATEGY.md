@@ -230,6 +230,7 @@ This migration will be performed layer by layer, referencing `ORIGINAL_ARCHITECT
     4.  **Version Control:** Create a new feature branch for the migration (e.g., `feature/quarkus-mongodb-migration`).
     5.  **Code Formatting:** Setup auto-formatting (e.g., Google Java Format via Spotless Maven plugin).
     6.  **Core Dependencies:** Add initial Quarkus dependencies to `pom.xml` (`quarkus-core`, `quarkus-arc` for CDI, `quarkus-resteasy-reactive-jackson`, `quarkus-mongodb-panache`, `quarkus-qute`, `quarkus-hibernate-validator`).
+    7.  **Archive Original Code:** Copy the entire original application source code (from the `app/` directory and any other relevant original modules like `acceptance-tests/` and `ui-acceptance-tests/` before migration changes) into a `legacy_original_code/` folder at the project root. This folder should be added to `.gitignore` to prevent it from being part of the migrated application's build artifacts or future commits on the main development line, but it will serve as a direct reference for ensuring like-for-like functionality during the migration.
 
 2.  **Phase 1: Domain Model and Basic Persistence**
     1.  Migrate `model/Member.java` to a Panache Mongo Entity.
