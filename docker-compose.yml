@@ -1,35 +1,47 @@
 version: '3.8'
 
 services:
-  wildfly:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    container_name: kitchensink-app
+  mongodb:
+    image: mongo:4.4 # Using version compatible with Dev Services for consistency
+    container_name: kitchensink-mongo
     ports:
-      - "8080:8080"  # Web interface
-      - "9990:9990"  # Admin console
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kitchensink-network
+    restart: unless-stopped
+
+  kitchensink-quarkus:
+    build:
+      context: ./app-migrated # Path to the migrated app with its Dockerfile
+      dockerfile: Dockerfile
+    container_name: kitchensink-quarkus-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
     networks:
       - kitchensink-network
     environment:
-      - JAVA_OPTS=-Xms512m -Xmx1024m
+      QUARKUS_MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/${QUARKUS_MONGODB_DATABASE:kitchensinkDB}
+      QUARKUS_MONGODB_DATABASE: kitchensinkDB # This is redundant if in conn string but can be kept
+      # If app uses quarkus.mongodb.hosts or similar, adjust here.
+      # For Panache default client, quarkus.mongodb.connection-string is the primary config.
+      # We'll set it in application.properties instead for profile-awareness.
+      # Example: %prod.quarkus.mongodb.connection-string=mongodb://mongodb:27017/kitchensinkDB
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/kitchensink"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/live"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s # Quarkus apps start faster
     restart: unless-stopped
-    volumes:
-      - wildfly-logs:/opt/jboss/wildfly/standalone/log
 
 networks:
   kitchensink-network:
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16
+    # ipam configuration can often be omitted for simpler setups
 
 volumes:
-  wildfly-logs: 
+  mongo_data: # Persistent data for MongoDB 
