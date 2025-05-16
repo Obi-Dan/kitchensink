@@ -40,13 +40,18 @@ public class MemberRegistrationUITest {
     // Helper method to save HTML snapshot
     private void saveHtmlSnapshot(Page currentPage, String testMethodName, String stepName) {
         try {
-            // Wait for the network to be idle, indicating dynamic updates might be complete.
-            // Timeout added to prevent test hanging indefinitely.
             currentPage.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(5000));
+            String pageContent = currentPage.content(); // Get content first
+            
+            // Print a snippet for debugging
+            System.out.println("---- HTML Content Snippet for " + testMethodName + "/" + stepName + " ----");
+            System.out.println(pageContent.substring(0, Math.min(pageContent.length(), 1000)));
+            System.out.println("---- End Snippet (Length: " + pageContent.length() + ") ----");
+
             Path snapshotDir = Paths.get("target", "html-snapshots", testMethodName);
-            Files.createDirectories(snapshotDir); // Ensure directory exists
+            Files.createDirectories(snapshotDir); 
             Path snapshotFile = snapshotDir.resolve(stepName + ".html");
-            Files.writeString(snapshotFile, currentPage.content());
+            Files.writeString(snapshotFile, pageContent);
             System.out.println("Saved HTML snapshot: " + snapshotFile.toAbsolutePath());
         } catch (PlaywrightException e) {
             System.err.println("PlaywrightException during saveHtmlSnapshot for " + testMethodName + "/" + stepName + ": " + e.getMessage());
