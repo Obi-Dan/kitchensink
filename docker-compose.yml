@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  wildfly:
+  app:
     build:
       context: ./app
       dockerfile: Dockerfile
@@ -22,6 +22,19 @@ services:
     restart: unless-stopped
     volumes:
       - wildfly-logs:/opt/jboss/wildfly/standalone/log
+
+  ui-tests:
+    build:
+      context: .
+      dockerfile: ./ui-acceptance-tests/Dockerfile
+    container_name: kitchensink-ui-tests
+    networks:
+      - kitchensink-network
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./ui-acceptance-tests/target:/usr/src/ui-tests/target
 
 networks:
   kitchensink-network:

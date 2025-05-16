@@ -35,7 +35,7 @@ public class MemberRegistrationUITest {
     BrowserContext context;
     Page page;
 
-    private final String appUrl = "http://localhost:8080/kitchensink/";
+    private final String appUrl = System.getProperty("app.url", "http://localhost:8080/kitchensink/");
 
     // Helper method to save HTML snapshot
     private void saveHtmlSnapshot(Page currentPage, String testMethodName, String stepName) {
@@ -167,7 +167,7 @@ public class MemberRegistrationUITest {
     static void launchBrowser() {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                .setHeadless(false) // Run in non-headless mode for diagnostics
+                .setHeadless(true) // Run in headless mode for containerized execution
         );
     }
 

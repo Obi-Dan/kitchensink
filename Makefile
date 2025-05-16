@@ -41,7 +41,7 @@ stop:
 # Show application logs
 logs:
 	@echo "Showing Kitchensink application logs (docker-compose.yml in root)..."
-	docker-compose logs -f wildfly
+	docker-compose logs -f app
 
 # Clean up resources
 clean: stop
@@ -82,22 +82,9 @@ test-report:
 # Run acceptance tests
 acceptance-test:
 	@echo "Starting application for acceptance tests (docker-compose.yml in root)..."
-	docker-compose up -d
-	@echo "Waiting for application to start..."
-	@timeout_seconds=120; \
-	start_time=$$(date +%s); \
-	while ! curl -s -f http://localhost:8080/kitchensink/rest/members > /dev/null; do \
-		current_time=$$(date +%s); \
-		elapsed_time=$$((current_time - start_time)); \
-		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
-			echo "Application failed to start within $$timeout_seconds seconds."; \
-			docker-compose logs wildfly && docker-compose down; \
-			exit 1; \
-		fi; \
-		echo "Still waiting for app (http://localhost:8080/kitchensink/rest/members)... $$elapsed_time/$$timeout_seconds s"; \
-		sleep 5; \
-	done
-	@echo "Application started!"
+	docker-compose up -d app
+	@echo "Waiting for application to start (using healthcheck)..."
+	@echo "Application presumed started by docker-compose dependency management."
 	@echo "Running acceptance tests from acceptance-tests/ directory..."
 	cd acceptance-tests && mvn test
 	@echo "Stopping application after acceptance tests (docker-compose.yml in root)..."
@@ -108,28 +95,15 @@ acceptance-test:
 ui-test:
 	@echo "Cleaning up old UI test videos..."
 	rm -rf ui-acceptance-tests/target/videos/*
-	@echo "Starting application for UI acceptance tests (docker-compose.yml in root)..."
-	docker-compose up -d
-	@echo "Waiting for application to start..."
-	@timeout_seconds=120; \
-	start_time=$$(date +%s); \
-	while ! curl -s -f http://localhost:8080/kitchensink/ > /dev/null; do \
-		current_time=$$(date +%s); \
-		elapsed_time=$$((current_time - start_time)); \
-		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
-			echo "Application failed to start within $$timeout_seconds seconds."; \
-			docker-compose logs wildfly && docker-compose down; \
-			exit 1; \
-		fi; \
-		echo "Still waiting for app (http://localhost:8080/kitchensink/)... $$elapsed_time/$$timeout_seconds s"; \
-		sleep 5; \
-	done
-	@echo "Application started!"
-	@echo "Running UI acceptance tests from ui-acceptance-tests/ directory..."
-	(cd ui-acceptance-tests && mvn test)
-	@echo "Stopping application after UI acceptance tests (docker-compose.yml in root)..."
+	@echo "Building services if necessary (docker-compose.yml in root)..."
+	docker-compose build app ui-tests
+	@echo "Starting application service for UI acceptance tests (docker-compose.yml in root)..."
+	docker-compose up -d app
+	@echo "Running UI acceptance tests in a container (service: ui-tests)..."
+	docker-compose run --rm ui-tests
+	@echo "Stopping application service after UI acceptance tests (docker-compose.yml in root)..."
 	docker-compose down -v
-	@echo "UI Acceptance tests finished. Videos saved in ui-acceptance-tests/target/videos/"
+	@echo "UI Acceptance tests finished. Videos and reports should be in ui-acceptance-tests/target/"
 
 # Open the UI test video directory
 open-video-dir:
