@@ -21,7 +21,7 @@
                 <p>Enforces annotation-based constraints defined on the model class.</p>
                 
                 <!--# Display global messages if any #-->
-                {#if globalMessages isNotEmpty}
+                {#if globalMessages}
                     <ul class="messages">
                         {#for message in globalMessages}
                             <li class="{message.type}">{message.text}</li>
