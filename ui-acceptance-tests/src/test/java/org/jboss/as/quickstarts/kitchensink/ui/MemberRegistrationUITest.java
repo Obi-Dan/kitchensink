@@ -77,9 +77,8 @@ public class MemberRegistrationUITest {
         verifyPageTitle(currentPage, "kitchensink");
 
         // General page structure elements from default.xhtml template
-        Locator jbossLogo = currentPage.locator("div.dualbrand img[src='resources/gfx/rhjb_eap_logo.png']");
+        Locator jbossLogo = currentPage.locator("div.dualbrand img[src='/gfx/rhjb_eap_logo.png']");
         assertThat(jbossLogo).isVisible();
-        // Updated based on assumed output
         assertThat(jbossLogo).hasAttribute("alt", "JBoss Enterprise Application Platform"); 
 
         assertElementsVisible(
@@ -1055,7 +1054,7 @@ public class MemberRegistrationUITest {
     // Helper method to be called by inspectAndPrintPageElementValues
     private void printPageDetails() {
         // 1. JBoss Logo alt text
-        Locator jbossLogo = page.locator("div.dualbrand img[src='resources/gfx/rhjb_eap_logo.png']");
+        Locator jbossLogo = page.locator("div.dualbrand img[src='/gfx/rhjb_eap_logo.png']");
         if (jbossLogo.isVisible()) {
             String altText = jbossLogo.getAttribute("alt");
             System.out.println("JBoss Logo 'alt' attribute: " + (altText != null ? "'" + altText + "'" : "null or not set"));
