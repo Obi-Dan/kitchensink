@@ -90,7 +90,7 @@ public class MemberRegistrationUITest {
         );
 
         // Check for specific text content in key areas
-        assertThat(currentPage.locator("h1").filter(new Locator.FilterOptions().setHasText("Welcome to JBoss!"))).isVisible();
+        assertThat(currentPage.locator("h1").filter(new Locator.FilterOptions().setHasText("Welcome to JBoss (Quarkus Edition)!"))).isVisible();
         
         // Aside content checks
         Locator aside = currentPage.locator("div#aside");
