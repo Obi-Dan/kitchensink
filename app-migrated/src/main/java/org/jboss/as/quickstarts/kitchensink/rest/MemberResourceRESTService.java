@@ -111,6 +111,25 @@ public class MemberResourceRESTService {
         return builder.build();
     }
 
+    @DELETE
+    @Path("/{id}")
+    public Response deleteMember(@PathParam("id") String id) {
+        ObjectId objectId;
+        try {
+            objectId = new ObjectId(id);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid ID format for delete operation", Response.Status.BAD_REQUEST);
+        }
+
+        boolean deleted = Member.deleteById(objectId);
+        if (deleted) {
+            return Response.noContent().build(); // 204 No Content
+        } else {
+            // If deleteById returns false, it means the entity was not found for that id
+            throw new WebApplicationException("Member with id " + id + " not found for delete.", Response.Status.NOT_FOUND);
+        }
+    }
+
     // UI Endpoints
     @GET
     @Path("/ui")

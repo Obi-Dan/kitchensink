@@ -41,6 +41,24 @@ build:
 run: build
 	@echo "Starting Kitchensink Quarkus application and MongoDB..."
 	$(DC_ENV) docker-compose up -d kitchensink-quarkus mongodb
+	@echo "Waiting for Quarkus application to become healthy (checking http://localhost:$(APP_HOST_PORT)/q/health/live)..."
+	@timeout_seconds=120; \
+	start_time=$$(date +%s); \
+	while ! curl -s -f http://localhost:$(APP_HOST_PORT)/q/health/live 2>/dev/null | grep -q '"status": "UP"'; do \
+		current_time=$$(date +%s); \
+		elapsed_time=$$((current_time - start_time)); \
+		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
+			echo; \
+			echo "Quarkus application failed to become healthy within $$timeout_seconds seconds at http://localhost:$(APP_HOST_PORT)/q/health/live."; \
+			echo "Please check logs using 'make logs' or directly with 'docker-compose logs kitchensink-quarkus'."; \
+			echo "Current container status:"; \
+			$(DC_ENV) docker-compose ps; \
+			exit 1; \
+		fi; \
+		printf "Still waiting for app... %s/%s s\\r" "$$elapsed_time" "$$timeout_seconds"; \
+		sleep 3; \
+	done
+	@echo "\\nQuarkus application is healthy!"
 	@echo "Quarkus application will be available at http://localhost:$(APP_HOST_PORT)"
 	@echo "UI available at http://localhost:$(APP_HOST_PORT)/rest/members/ui"
 	@echo "MongoDB available at mongodb://localhost:27017 (exposed from container)"
@@ -112,7 +130,7 @@ acceptance-test:
 	# For acceptance tests to use the configured APP_HOST_PORT, their RestAssured.port would need to be set dynamically.
 	# Currently, they are hardcoded to 8080 in the test code (BASE_URL).
 	# This can be passed as a system property: -Dapp.host.port=$(APP_HOST_PORT)
-	(cd acceptance-tests && ../mvnw verify -Dapp.host.port=$(APP_HOST_PORT) -Dapp.db.name=$(APP_DB_NAME)) 
+	(cd acceptance-tests && ../app-migrated/mvnw verify -Dapp.host.port=$(APP_HOST_PORT) -Dapp.db.name=$(APP_DB_NAME)) 
 	@echo "Stopping application and MongoDB after API acceptance tests..."
 	$(DC_ENV) docker-compose down -v
 	@echo "API Acceptance tests finished."
@@ -140,7 +158,7 @@ ui-test:
 	@echo "Quarkus application UI ready!"
 	@echo "Running UI acceptance tests from ui-acceptance-tests/ directory..."
 	# Similar to API tests, UI tests need to know the APP_HOST_PORT.
-	(cd ui-acceptance-tests && ../mvnw verify -Dapp.host.port=$(APP_HOST_PORT) -Dapp.db.name=$(APP_DB_NAME))
+	(cd ui-acceptance-tests && ../app-migrated/mvnw verify -Dapp.host.port=$(APP_HOST_PORT) -Dapp.db.name=$(APP_DB_NAME))
 	@echo "Stopping application and MongoDB after UI acceptance tests..."
 	$(DC_ENV) docker-compose down -v
 	@echo "UI Acceptance tests finished. Videos saved in ui-acceptance-tests/target/videos/"

@@ -81,19 +81,25 @@
 # Stage 1: Build the Quarkus application
 FROM maven:3.9.8-eclipse-temurin-21 AS builder
 
+ARG CACHE_BUSTER_ARG=not_set # This can be removed if not debugging cache issues
 USER root
-WORKDIR /app-migrated
+WORKDIR /usr/src/app
 
-# Copy the pom.xml and pre-download dependencies (optional but good for caching)
-COPY pom.xml .
-# RUN mvn dependency:go-offline -B # This can speed up subsequent builds if pom hasn't changed
+# Copy Maven wrapper and pom.xml to leverage dependency caching
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./ 
+
+# Make mvnw executable
+RUN chmod +x ./mvnw
+
+# Download dependencies first to leverage Docker layer caching
+RUN MAVEN_CONFIG='' ./mvnw -B dependency:go-offline
 
 # Copy the rest of the application source code
-COPY src ./src
+COPY src src
 
-# Package the application to create the uber-jar
-# Ensure to use the correct profile if needed, e.g., -Pnative for native, but here JVM uber-jar
-RUN mvn package -Dquarkus.package.type=uber-jar -DskipTests
+# Build the application, creating an uber-jar, and skip tests
+RUN MAVEN_CONFIG='' ./mvnw package -Dquarkus.package.type=uber-jar -DskipTests
 
 # Stage 2: Create the runtime image
 FROM registry.access.redhat.com/ubi9/openjdk-21:1.21
@@ -104,12 +110,11 @@ ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=or
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
 # Copy the uber-jar from the builder stage
-# The uber-jar is typically named quarkus-run.jar and is inside target/quarkus-app/
-COPY --from=builder /app-migrated/target/quarkus-app/quarkus-run.jar /deployments/quarkus-run.jar
+COPY --from=builder /usr/src/app/target/kitchensink-quarkus-1.0.0-SNAPSHOT-runner.jar /deployments/quarkus-run.jar
 # Additional libs or app/quarkus dirs are not typically needed for uber-jar, but if so, they can be copied:
-# COPY --from=builder /app-migrated/target/quarkus-app/lib/ /deployments/lib/
-# COPY --from=builder /app-migrated/target/quarkus-app/app/ /deployments/app/
-# COPY --from=builder /app-migrated/target/quarkus-app/quarkus/ /deployments/quarkus/
+# COPY --from=builder /usr/src/app/target/quarkus-app/lib/ /deployments/lib/
+# COPY --from=builder /usr/src/app/target/quarkus-app/app/ /deployments/app/
+# COPY --from=builder /usr/src/app/target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 185
