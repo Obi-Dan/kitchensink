@@ -27,8 +27,7 @@ public class MemberRegistration {
 
     private static final Logger LOG = Logger.getLogger(MemberRegistration.class);
 
-    @Inject
-    Event<Member> memberEventSrc;
+    @Inject Event<Member> memberEventSrc;
 
     // Custom exception for duplicate email
     public static class EmailAlreadyExistsException extends Exception {
