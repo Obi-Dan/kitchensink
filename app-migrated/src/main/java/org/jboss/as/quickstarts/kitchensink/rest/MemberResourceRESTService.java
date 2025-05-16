@@ -26,9 +26,11 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import jakarta.validation.Validator;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +56,9 @@ public class MemberResourceRESTService {
     @Inject MemberRegistration registrationService; // Inject the registration service
 
     @Inject Template member; // Injects the member.html template
+
+    @Context // Inject UriInfo
+    UriInfo uriInfo;
 
     // API Endpoints (existing)
     @GET
@@ -171,40 +176,70 @@ public class MemberResourceRESTService {
             @FormParam("email") String email,
             @FormParam("phoneNumber") String phoneNumber) {
 
+        log.infof("[UI Register] Attempting to register member. Name: '%s', Email: '%s', Phone: '%s'", name, email, phoneNumber);
+
         Member newMember = new Member();
         newMember.setName(name);
         newMember.setEmail(email);
         newMember.setPhoneNumber(phoneNumber);
 
-        UriBuilder redirectUriBuilder =
-                UriBuilder.fromPath("/rest/members/ui"); // Path relative to context root
+        UriBuilder redirectUriBuilder = uriInfo.getBaseUriBuilder().path("rest").path("members").path("ui");
+        log.debugf("[UI Register] Initial redirectUriBuilder path: %s", redirectUriBuilder.build().getPath());
 
         try {
+            log.debug("[UI Register] Attempting to validate member...");
             validateMember(newMember, null); // Pass null for currentMemberId
+            log.info("[UI Register] Member validation successful.");
+
+            log.debug("[UI Register] Attempting to call registrationService.register()...");
             registrationService.register(newMember);
-            redirectUriBuilder.queryParam("successMessage", "Registration successful!");
+            log.info("[UI Register] registrationService.register() successful. Member ID: " + newMember.id);
+
+            // TEMPORARY DEBUG: Redirect to a simple known path
+            URI redirectUri = uriInfo.getBaseUriBuilder().path("q/health/live").build();
+            log.infof("[UI Register] TEMPORARY DEBUG - Redirecting to: %s", redirectUri.toString());
+
         } catch (ConstraintViolationException ce) {
-            log.debug("Validation errors from UI: " + ce.getConstraintViolations());
-            List<String> errors =
-                    ce.getConstraintViolations().stream()
-                            .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
-                            .collect(Collectors.toList());
-            redirectUriBuilder.queryParam("validationErrors", errors.toArray(new String[0]));
-            // Repopulate form fields on error
+            log.warn("[UI Register] ConstraintViolationException caught: " + ce.getMessage());
+            if (ce.getConstraintViolations() != null && !ce.getConstraintViolations().isEmpty()) {
+                List<String> errors =
+                        ce.getConstraintViolations().stream()
+                                .map(cv -> {
+                                    String errorMsg = cv.getPropertyPath() + ": " + cv.getMessage();
+                                    log.debug("[UI Register] Validation error: " + errorMsg);
+                                    return errorMsg;
+                                })
+                                .collect(Collectors.toList());
+                redirectUriBuilder.queryParam("validationErrors", errors.toArray(new String[0]));
+            } else {
+                log.warn("[UI Register] ConstraintViolationException had no violations, adding generic error.");
+                redirectUriBuilder.queryParam("validationErrors", "Validation failed with no specific messages.");
+            }
             redirectUriBuilder.queryParam("newMemberName", name);
             redirectUriBuilder.queryParam("newMemberEmail", email);
             redirectUriBuilder.queryParam("newMemberPhoneNumber", phoneNumber);
+            log.debug("[UI Register] Added validationErrors and member data to redirect.");
+
         } catch (ValidationException ve) { // Custom validation like duplicate email
-            log.debug("Validation exception from UI: " + ve.getMessage());
+            log.warn("[UI Register] ValidationException caught: " + ve.getMessage());
             redirectUriBuilder.queryParam("validationErrors", ve.getMessage());
             redirectUriBuilder.queryParam("newMemberName", name);
             redirectUriBuilder.queryParam("newMemberEmail", email);
             redirectUriBuilder.queryParam("newMemberPhoneNumber", phoneNumber);
+            log.debug("[UI Register] Added ValidationException message and member data to redirect.");
+
         } catch (Exception e) {
-            log.error("Error registering member from UI: " + e.getMessage(), e);
-            redirectUriBuilder.queryParam("validationErrors", "An unexpected error occurred.");
+            log.error("[UI Register] Unexpected Exception caught: " + e.getMessage(), e);
+            redirectUriBuilder.queryParam("validationErrors", "An unexpected error occurred during registration.");
+            // Also pass back form fields if possible, in case it's a recoverable issue client-side or for user reference
+            redirectUriBuilder.queryParam("newMemberName", name);
+            redirectUriBuilder.queryParam("newMemberEmail", email);
+            redirectUriBuilder.queryParam("newMemberPhoneNumber", phoneNumber);
+            log.debug("[UI Register] Added generic error message and member data to redirect due to unexpected exception.");
         }
+
         URI redirectUri = redirectUriBuilder.build();
+        log.infof("[UI Register] Final redirect URI: %s", redirectUri.toString());
         return Response.seeOther(redirectUri).build();
     }
 

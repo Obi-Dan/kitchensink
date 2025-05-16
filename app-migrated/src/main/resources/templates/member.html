@@ -13,6 +13,12 @@
 </head>
 <body>
     <div id="container">
+        <div id="header">
+            <h1>Kitchensink</h1>
+            <p>A JAX-RS, CDI, EJB, JPA, JSF, Bean Validation, Arquillian, ShrinkWrap, and Maven Forge example for JBoss Enterprise Application Platform / WildFly.</p>
+            <!-- Placeholder for graphics if needed -->
+        </div>
+
         <div id="content">
             <h1>Welcome to Kitchensink (Quarkus Edition)!</h1>
             <p>Register a new member or view existing members.</p>
@@ -37,16 +43,16 @@
             <form action="/rest/members/ui/register" method="POST">
                 <h:panelGrid columns="3" columnClasses="titleCell"> <!-- Visual placeholder, will be divs/spans -->
                     <div><label for="name">Name:</label></div>
-                    <div><input type="text" id="name" name="name" value="{newMember.name ?? ''}" required /></div>
-                    <div><span class="invalid">{validationMessages.name ?? ''}</span></div>
+                    <div><input type="text" id="name" name="name" value="{newMember.name ?: ''}" required /></div>
+                    <div><span class="invalid">{validationMessages?.name ?: ''}</span></div>
 
                     <div><label for="email">Email:</label></div>
-                    <div><input type="email" id="email" name="email" value="{newMember.email ?? ''}" required /></div>
-                    <div><span class="invalid">{validationMessages.email ?? ''}</span></div>
+                    <div><input type="email" id="email" name="email" value="{newMember.email ?: ''}" required /></div>
+                    <div><span class="invalid">{validationMessages?.email ?: ''}</span></div>
 
                     <div><label for="phoneNumber">Phone #:</label></div>
-                    <div><input type="text" id="phoneNumber" name="phoneNumber" value="{newMember.phoneNumber ?? ''}" required pattern="[0-9]{10,12}" title="Phone number must be 10 to 12 digits."/></div>
-                    <div><span class="invalid">{validationMessages.phoneNumber ?? ''}</span></div>
+                    <div><input type="text" id="phoneNumber" name="phoneNumber" value="{newMember.phoneNumber ?: ''}" required pattern="[0-9]&#123;10,12&#125;" title="Phone number must be 10 to 12 digits."/></div>
+                    <div><span class="invalid">{validationMessages?.phoneNumber ?: ''}</span></div>
                 </h:panelGrid>
                 <p>
                     <input type="submit" value="Register" class="register" />
@@ -55,9 +61,9 @@
 
             <h2>Members</h2>
             {#if members.empty}
-                <em>No registered members.</em>
+                <p>No members registered!</p>
             {#else}
-                <table class="simpletablestyle">
+                <table>
                     <thead>
                         <tr>
                             <th>Id</th>
@@ -68,35 +74,64 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#for member in members}
+                        {#for member_item in members}
                         <tr>
-                            <td>{member.id}</td>
-                            <td>{member.name}</td>
-                            <td>{member.email}</td>
-                            <td>{member.phoneNumber}</td>
-                            <td><a href="/rest/members/{member.id}">/rest/members/{member.id}</a></td>
+                            <td>{member_item.id.toString()}</td>
+                            <td>{member_item.name}</td>
+                            <td>{member_item.email}</td>
+                            <td>{member_item.phoneNumber}</td>
+                            <td><a href="/rest/members/{member_item.id.toString()}">/rest/members/{member_item.id.toString()}</a></td>
                         </tr>
                         {/for}
                     </tbody>
-                     <tfoot>
+                    <tfoot>
                         <tr>
                             <td colspan="5">
-                                REST URL for all members: <a href="/rest/members">/rest/members</a>
+                                <a href="/rest/members">/rest/members</a>
                             </td>
                         </tr>
                     </tfoot>
                 </table>
             {/if}
         </div>
+
         <div id="aside">
-            <p>Learn more about Quarkus.</p>
+            <h2>Additional Resources</h2>
             <ul>
-                <li><a href="https://quarkus.io">Quarkus.io</a></li>
-                <li><a href="https://quarkus.io/guides/">Quarkus Guides</a></li>
+                <li>
+                    <a href="http://docs.jboss.org/tools/whatsnew">
+                        <h4>Documentation</h4>
+                        <p>The official JBoss Tools and JBoss Developer Studio documentation</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="http://www.jboss.org/products/enterpriseapplicationplatform">
+                        <h4>Product Information</h4>
+                        <p>JBoss Enterprise Application Platform product page</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="https://access.redhat.com/documentation/en/red-hat-jboss-enterprise-application-platform/">
+                        <h4>Red Hat JBoss EAP Documentation</h4>
+                        <p>Official Red Hat JBoss EAP Documentation page</p>
+                    </a>
+                </li>
+                 <li>
+                    <a href="http://www.redhat.com/products/jbossenterprisemiddleware/community-projects/">
+                        <h4>Community Projects</h4>
+                        <p>JBoss and Red Hat Community Projects page</p>
+                    </a>
+                </li>
             </ul>
+            <p>
+                Find more Red Hat examples and quickstarts in the <a href="https://github.com/jboss-developer/jboss-eap-quickstarts"> JBoss EAP Quickstarts collection</a>.
+            </p>
         </div>
+
         <div id="footer">
-            <p>Migrated from JBoss EAP to Quarkus.</p>
+            <p>
+                This project was generated from a Maven archetype from JBoss.<br />
+            </p>
         </div>
     </div>
 </body>
