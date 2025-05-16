@@ -62,9 +62,7 @@
             </form>
 
             <h2>Members</h2>
-            {#if members.isEmpty}
-                <em>No registered members.</em>
-            {#else}
+            {#if members} <!-- If members list is not null and not empty -->
                 <table class="simpletablestyle">
                     <thead>
                         <tr>
@@ -92,6 +90,8 @@
                         </tr>
                     </tfoot>
                 </table>
+            {#else} <!-- If members list IS empty (or null) -->
+                <em>No registered members.</em>
             {/if}
         </div>
         <div id="aside">
