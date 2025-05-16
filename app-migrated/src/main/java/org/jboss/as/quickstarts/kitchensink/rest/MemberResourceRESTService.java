@@ -16,6 +16,7 @@
  */
 package org.jboss.as.quickstarts.kitchensink.rest;
 
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -55,6 +56,7 @@ public class MemberResourceRESTService {
     @Inject MemberRegistration registration;
 
     @Inject
+    @Location("Member/index.html") // Specify the path to the template
     Template index; // Injects templates/Member/index.html based on resource method return type
 
     // REST API methods (prefixed with /api for clarity, original /members path can be kept if no
@@ -92,24 +94,45 @@ public class MemberResourceRESTService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createMemberApi(Member member) {
-        LOG.info("API: Attempting to create member: " + member.email);
+        LOG.info(
+                "API: Received createMemberApi request for email: "
+                        + (member != null ? member.email : "null member object"));
+        if (member == null) {
+            LOG.error("API: Member object is null in createMemberApi");
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Member data is required.")
+                    .build();
+        }
+        LOG.info(
+                "API: Attempting to create member: " + member.email + " with name: " + member.name);
         Response.ResponseBuilder builder;
         try {
-            validateMemberBean(member); // Bean validation only
-            registration.register(member); // Handles persistence and unique email check
+            LOG.info("API: Validating member bean for: " + member.email);
+            validateMemberBean(member);
+            LOG.info("API: Calling registration service for: " + member.email);
+            registration.register(member);
+            LOG.info("API: Registration service call completed for: " + member.email);
             builder = Response.ok(member);
         } catch (ConstraintViolationException ce) {
+            LOG.warn("API: ConstraintViolationException for member: " + member.email, ce);
             builder = createViolationResponse(ce.getConstraintViolations());
         } catch (MemberRegistration.EmailAlreadyExistsException e) {
+            LOG.warn("API: EmailAlreadyExistsException for: " + member.email, e);
             Map<String, String> responseObj = new HashMap<>();
             responseObj.put("email", "Email already exists");
             builder = Response.status(Response.Status.CONFLICT).entity(responseObj);
         } catch (Exception e) {
-            LOG.error("API: Error creating member: " + e.getMessage(), e);
+            LOG.error(
+                    "API: Generic Exception creating member: "
+                            + member.email
+                            + " - "
+                            + e.getMessage(),
+                    e);
             Map<String, String> responseObj = new HashMap<>();
             responseObj.put("error", "An unexpected error occurred: " + e.getMessage());
             builder = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(responseObj);
         }
+        LOG.info("API: Building response for createMemberApi for email: " + member.email);
         return builder.build();
     }
 
@@ -137,45 +160,42 @@ public class MemberResourceRESTService {
 
         Member newMember = new Member(name, email, phoneNumber);
         Map<String, String> errors = new HashMap<>();
-        List<String> globalMessages = new java.util.ArrayList<>();
+        List<Map<String, String>> globalMessages =
+                new java.util.ArrayList<>(); // List of Maps for type/text
 
         try {
-            validateMemberBean(newMember); // Bean validation
-            registration.register(newMember); // Handles persistence and unique email check
-            globalMessages.add("Registered!");
-            // After successful registration, show list with an empty newMember form
+            validateMemberBean(newMember);
+            registration.register(newMember);
+            globalMessages.add(Map.of("type", "valid", "text", "Registered!"));
             List<Member> members = Member.list("ORDER BY name");
             return index.data("members", members)
                     .data("newMember", new Member())
                     .data("errors", Collections.emptyMap())
-                    .data(
-                            "globalMessages",
-                            globalMessages.stream()
-                                    .map(m -> Map.of("type", "valid", "text", m))
-                                    .collect(Collectors.toList()));
+                    .data("globalMessages", globalMessages);
 
         } catch (ConstraintViolationException ce) {
             ce.getConstraintViolations()
                     .forEach(v -> errors.put(v.getPropertyPath().toString(), v.getMessage()));
-            globalMessages.add("Validation errors occurred.");
+            globalMessages.add(Map.of("type", "invalid", "text", "Validation errors occurred."));
         } catch (MemberRegistration.EmailAlreadyExistsException e) {
             errors.put("email", "Email already exists");
-            globalMessages.add("This email is already registered.");
+            globalMessages.add(
+                    Map.of("type", "invalid", "text", "This email is already registered."));
         } catch (Exception e) {
             LOG.error("Error during UI registration: " + e.getMessage(), e);
-            globalMessages.add("An unexpected error occurred during registration.");
+            globalMessages.add(
+                    Map.of(
+                            "type",
+                            "error",
+                            "text",
+                            "An unexpected error occurred during registration."));
         }
 
-        // On error, re-render form with submitted data and errors
         List<Member> members = Member.list("ORDER BY name");
         return index.data("members", members)
-                .data("newMember", newMember) // Repopulate with submitted data
+                .data("newMember", newMember)
                 .data("errors", errors)
-                .data(
-                        "globalMessages",
-                        globalMessages.stream()
-                                .map(m -> Map.of("type", "invalid", "text", m))
-                                .collect(Collectors.toList()));
+                .data("globalMessages", globalMessages);
     }
 
     private void validateMemberBean(Member member) throws ConstraintViolationException {
