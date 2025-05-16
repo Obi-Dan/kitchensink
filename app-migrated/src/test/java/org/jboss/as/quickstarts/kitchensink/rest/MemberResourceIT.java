@@ -1,4 +1,4 @@
-package org.jboss.as.quickstarts.kitchensink;
+package org.jboss.as.quickstarts.kitchensink.rest;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
