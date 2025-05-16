@@ -16,6 +16,7 @@
  */
 package org.jboss.as.quickstarts.kitchensink.rest;
 
+import io.quarkus.panache.common.Sort;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -66,7 +67,7 @@ public class MemberResourceRESTService {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Member> listAllMembersApi() {
         LOG.info("API: Listing all members (ordered by name)");
-        return Member.list("ORDER BY name");
+        return Member.list(Sort.by("name"));
     }
 
     @GET
@@ -142,7 +143,7 @@ public class MemberResourceRESTService {
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getUIPage() {
         LOG.info("Serving UI page");
-        List<Member> members = Member.list("ORDER BY name");
+        List<Member> members = Member.list(Sort.by("name"));
         return index.data("members", members)
                 .data("newMember", new Member()) // Empty member for the form
                 .data("errors", Collections.emptyMap()) // No errors initially
@@ -167,7 +168,7 @@ public class MemberResourceRESTService {
             validateMemberBean(newMember);
             registration.register(newMember);
             globalMessages.add(Map.of("type", "valid", "text", "Registered!"));
-            List<Member> members = Member.list("ORDER BY name");
+            List<Member> members = Member.list(Sort.by("name"));
             return index.data("members", members)
                     .data("newMember", new Member())
                     .data("errors", Collections.emptyMap())
@@ -191,7 +192,7 @@ public class MemberResourceRESTService {
                             "An unexpected error occurred during registration."));
         }
 
-        List<Member> members = Member.list("ORDER BY name");
+        List<Member> members = Member.list(Sort.by("name"));
         return index.data("members", members)
                 .data("newMember", newMember)
                 .data("errors", errors)
