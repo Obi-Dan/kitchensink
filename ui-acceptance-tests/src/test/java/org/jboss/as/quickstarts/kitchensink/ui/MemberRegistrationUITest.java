@@ -93,11 +93,16 @@ public class MemberRegistrationUITest {
         assertThat(currentPage.locator("h1").filter(new Locator.FilterOptions().setHasText("Welcome to JBoss (Quarkus Edition)!"))).isVisible();
         
         // Aside content checks
-        Locator aside = currentPage.locator("div#aside");
-        // Updated to match default.xhtml: p tag instead of h2, and updated text
-        assertThat(aside.locator("p").filter(new Locator.FilterOptions().setHasText("Learn more about Red Hat JBoss Enterprise Application Platform."))).isVisible(); 
-        assertThat(aside.locator("ul li a").filter(new Locator.FilterOptions().setHasText("Documentation"))).isVisible();
-        assertThat(aside.locator("ul li a").filter(new Locator.FilterOptions().setHasText("Product Information"))).isVisible();
+        Locator asidePara = currentPage.locator("div#aside").locator("p")
+            .filter(new Locator.FilterOptions().setHasText("Learn more about Red Hat JBoss Enterprise Application Platform (and Quarkus!)."));
+        assertThat(asidePara).isVisible();
+
+        assertElementsVisible(
+            currentPage.locator("div#aside"),
+            currentPage.locator("div#aside ul li a").filter(new Locator.FilterOptions().setHasText("Documentation")),
+            currentPage.locator("div#aside ul li a").filter(new Locator.FilterOptions().setHasText("Product Information"))
+        );
+
         // "Quickstarts" link was not found in assumed output, so its assertion remains commented or removed.
         // assertThat(aside.locator("ul li a").filter(new Locator.FilterOptions().setHasText("Quickstarts"))).isVisible();
 
