@@ -8,7 +8,6 @@
 <body>
     <div id="container">
         <div class="dualbrand">
-             <!-- Assuming the logo path is now relative to META-INF/resources/ -->
             <img src="/gfx/rhjb_eap_logo.png" alt="JBoss Enterprise Application Platform" width="300" height="175"/>
         </div>
         <div id="content">
@@ -17,11 +16,11 @@
                 <p>You have successfully deployed a Quarkus Enterprise Application.</p>
             </div>
 
-            <form id="reg" method="post" action="/rest/app/ui/register">
+            <form id="reg" method="post" action="/rest/app/ui/register"> <!--# action will point to a JAX-RS endpoint #-->
                 <h2>Member Registration</h2>
                 <p>Enforces annotation-based constraints defined on the model class.</p>
                 
-                {# Display global messages if any #}
+                <!--# Display global messages if any #-->
                 {#if globalMessages isNotEmpty}
                     <ul class="messages">
                         {#for message in globalMessages}
@@ -30,7 +29,7 @@
                     </ul>
                 {/if}
 
-                <table> {# Using table for layout similar to original h:panelGrid #}
+                <table> <!--# Using table for layout similar to original h:panelGrid #-->
                     <tbody>
                         <tr>
                             <td class="titleCell"><label for="name">Name:</label></td>
@@ -55,7 +54,7 @@
                         <tbody>
                             <tr>
                                 <td><input id="register" type="submit" value="Register" class="register"/></td>
-                                <td></td> {# Placeholder for messages that were next to button, now handled globally above #}
+                                <td></td> <!--# Placeholder for messages that were next to button, now handled globally above #-->
                             </tr>
                         </tbody>
                     </table>
@@ -79,7 +78,7 @@
                     <tbody>
                         {#for member in members}
                         <tr>
-                            <td>{member.stringId}</td> {# Assuming Member has getStringId() or id.toString() #}
+                            <td>{member.stringId}</td> <!--# Assuming Member has getStringId() or id.toString() #-->
                             <td>{member.name}</td>
                             <td>{member.email}</td>
                             <td>{member.phoneNumber}</td>
