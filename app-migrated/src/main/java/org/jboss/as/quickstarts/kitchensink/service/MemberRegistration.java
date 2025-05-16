@@ -19,7 +19,6 @@ package org.jboss.as.quickstarts.kitchensink.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional; // For atomicity if multiple operations were involved
 import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.jboss.logging.Logger;
 
@@ -28,7 +27,8 @@ public class MemberRegistration {
 
     private static final Logger LOG = Logger.getLogger(MemberRegistration.class);
 
-    @Inject Event<Member> memberEventSrc;
+    @Inject
+    Event<Member> memberEventSrc;
 
     // Custom exception for duplicate email
     public static class EmailAlreadyExistsException extends Exception {
@@ -37,7 +37,7 @@ public class MemberRegistration {
         }
     }
 
-    @Transactional // Ensures atomicity for the check + persist operation
+    // @Transactional // Temporarily removed to test if this is causing connection resets
     public void register(Member member) throws EmailAlreadyExistsException {
         LOG.info("Registering member: " + member.email);
 
