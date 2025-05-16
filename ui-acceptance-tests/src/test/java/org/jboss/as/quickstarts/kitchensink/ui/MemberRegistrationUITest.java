@@ -110,13 +110,13 @@ public class MemberRegistrationUITest {
         // Registration Form Structure (These were generally okay)
         Locator registrationForm = currentPage.locator("form#reg");
         assertThat(registrationForm.locator("h2").filter(new Locator.FilterOptions().setHasText("Member Registration"))).isVisible();
-        assertThat(registrationForm.locator("label[for='reg:name']").filter(new Locator.FilterOptions().setHasText("Name:"))).isVisible();
-        assertThat(registrationForm.locator("input#reg\\:name")).isVisible();
-        assertThat(registrationForm.locator("label[for='reg:email']").filter(new Locator.FilterOptions().setHasText("Email:"))).isVisible();
-        assertThat(registrationForm.locator("input#reg\\:email")).isVisible();
-        assertThat(registrationForm.locator("label[for='reg:phoneNumber']").filter(new Locator.FilterOptions().setHasText("Phone #:"))).isVisible();
-        assertThat(registrationForm.locator("input#reg\\:phoneNumber")).isVisible();
-        assertThat(registrationForm.locator("input#reg\\:register[value='Register']")).isVisible();
+        assertThat(registrationForm.locator("label[for='name']").filter(new Locator.FilterOptions().setHasText("Name:"))).isVisible();
+        assertThat(registrationForm.locator("input#name")).isVisible();
+        assertThat(registrationForm.locator("label[for='email']").filter(new Locator.FilterOptions().setHasText("Email:"))).isVisible();
+        assertThat(registrationForm.locator("input#email")).isVisible();
+        assertThat(registrationForm.locator("label[for='phoneNumber']").filter(new Locator.FilterOptions().setHasText("Phone #:"))).isVisible();
+        assertThat(registrationForm.locator("input#phoneNumber")).isVisible();
+        assertThat(registrationForm.locator("input#register[value='Register']")).isVisible();
 
         // Members List Structure
         assertThat(currentPage.locator("h2").filter(new Locator.FilterOptions().setHasText("Members"))).isVisible();
@@ -150,10 +150,10 @@ public class MemberRegistrationUITest {
 
     // Helper method to register a member
     private void registerMember(String name, String email, String phone) {
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         nameInput.fill(name);
         emailInput.fill(email);
@@ -238,10 +238,10 @@ public class MemberRegistrationUITest {
         verifyKitchensinkMainPageStructure(page); // Verify common page elements
 
         // REQ-2.1.5: Form for member registration
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         assertThat(nameInput).isVisible();
         assertThat(emailInput).isVisible();
@@ -310,10 +310,10 @@ public class MemberRegistrationUITest {
         saveHtmlSnapshot(page, "testRegistrationValidationErrors", "01_initial_page_load");
         verifyKitchensinkMainPageStructure(page); // Verify common page elements
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         nameInput.fill("ThisNameIsWayTooLongAndInvalid1234567890");
         emailInput.fill("notanemail");
@@ -324,21 +324,21 @@ public class MemberRegistrationUITest {
         // For name (REQ-1.2.1) - Persistent issue: locator not finding visible message.
         // Commenting out for now as further debugging requires manual DOM inspection.
         // Assuming input is in a <td>, message is in the next <td>.
-        // Locator nameMessageCell = page.locator("id=reg:name").locator("xpath=../following-sibling::td[1]");
+        // Locator nameMessageCell = page.locator("input#name").locator("xpath=../following-sibling::td[1]");
         // Locator nameMessage = nameMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // Corrected to use xpath=
         // assertThat(nameMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         // assertThat(nameMessage).containsText("size must be between 1 and 25");
 
         // For email (REQ-1.2.2)
         // Assuming input is in a <td>, message is in the next <td> which is a sibling of the input's parent <td>.
-        Locator emailMessageCell = page.locator("id=reg:email").locator("xpath=../following-sibling::td[1]");
+        Locator emailMessageCell = page.locator("input#email").locator("xpath=../following-sibling::td[1]");
         Locator emailMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // Corrected to use xpath=
         assertThat(emailMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         assertThat(emailMessage).containsText("must be a well-formed email address");
 
         // For phone (REQ-1.2.3)
         // Assuming input is in a <td>, message is in the next <td>.
-        Locator phoneMessageCell = page.locator("id=reg:phoneNumber").locator("xpath=../following-sibling::td[1]");
+        Locator phoneMessageCell = page.locator("input#phoneNumber").locator("xpath=../following-sibling::td[1]");
         Locator phoneMessage = phoneMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
         assertThat(phoneMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         
@@ -410,10 +410,10 @@ public class MemberRegistrationUITest {
         String uniqueName2 = "User Two";
         String phone = "1234567890";
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         // Register first user
         nameInput.fill(uniqueName1);
@@ -458,10 +458,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
         Locator nameMessageCell = nameInput.locator("xpath=../following-sibling::td[1]");
         Locator nameErrorMessage = nameMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
 
@@ -522,10 +522,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
         // Locator emailMessageCell = emailInput.locator("xpath=../following-sibling::td[1]"); // REMOVE
         // Locator emailErrorMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // REMOVE
         // Use a more direct CSS selector (this was also an intermediate step, also remove if the XPath in loop is preferred):
@@ -551,7 +551,7 @@ public class MemberRegistrationUITest {
             System.out.println("Testing email validation for: " + invalidEmail); // DEBUG PRINT
             
             // Define locator inside the loop for maximum freshness
-            String emailErrorXPath = "//form[@id='reg']//tr[.//input[@id='reg:email']]//td[last()]/span[contains(@class, 'invalid')]";
+            String emailErrorXPath = "//form[@id='reg']//tr[.//input[@id='email']]//td[last()]/span[contains(@class, 'invalid')]";
             // Initial locator definition (will be re-assigned if waitForSelector is successful)
             Locator emailErrorMessage = page.locator(emailErrorXPath);
 
@@ -599,10 +599,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
         Locator phoneMessageCell = phoneInput.locator("xpath=../following-sibling::td[1]");
         Locator phoneErrorMessage = phoneMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
 
@@ -684,10 +684,10 @@ public class MemberRegistrationUITest {
         }
 
         // Register a member to make the table appear
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         String testName = "First Member";
         String testEmail = "first.member." + System.currentTimeMillis() + "@example.com";
@@ -823,9 +823,9 @@ public class MemberRegistrationUITest {
         saveHtmlSnapshot(page, "testFormClearedAfterSuccessfulRegistration", "01_after_registration");
 
         // Verify form fields are empty
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
 
         assertThat(nameInput).isEmpty();
         assertThat(emailInput).isEmpty();
@@ -840,10 +840,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         String invalidName = "NameWithNumber123"; // Invalid
         String validEmail = "persist." + System.currentTimeMillis() + "@example.com"; // Valid
@@ -876,10 +876,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         String nameWithSpaces = "  Spaced Name  ";
         // Create a unique email for this test run to avoid conflicts
@@ -909,9 +909,9 @@ public class MemberRegistrationUITest {
 
         // Form fields should still be empty or reflect submitted (untrimmed) values depending on exact JSF lifecycle with this issue.
         // For now, focusing on the table state.
-        // assertThat(page.locator("id=reg:name")).isEmpty();
-        // assertThat(page.locator("id=reg:email")).isEmpty();
-        // assertThat(page.locator("id=reg:phoneNumber")).isEmpty();
+        // assertThat(page.locator("input#name")).isEmpty();
+        // assertThat(page.locator("input#email")).isEmpty();
+        // assertThat(page.locator("input#phoneNumber")).isEmpty();
 
         page.waitForTimeout(500);
     }
@@ -928,10 +928,10 @@ public class MemberRegistrationUITest {
         String uniqueSingleTldEmail = "user." + System.currentTimeMillis() + "@domain.c";
         String testPhone = "1234567890";
 
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         nameInput.fill(testName);
         emailInput.fill(uniqueSingleTldEmail);
@@ -1014,10 +1014,10 @@ public class MemberRegistrationUITest {
 
     // Helper to fill and submit the registration form for inspection
     private void fillAndSubmitForm(String name, String email, String phone) {
-        Locator nameInput = page.locator("id=reg:name");
-        Locator emailInput = page.locator("id=reg:email");
-        Locator phoneInput = page.locator("id=reg:phoneNumber");
-        Locator registerButton = page.locator("id=reg:register");
+        Locator nameInput = page.locator("input#name");
+        Locator emailInput = page.locator("input#email");
+        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator registerButton = page.locator("input#register");
 
         nameInput.fill(name);
         emailInput.fill(email);
