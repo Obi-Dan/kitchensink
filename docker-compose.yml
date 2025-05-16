@@ -1,27 +1,32 @@
 version: '3.8'
 
 services:
-  app:
+  app: # Migrated Application
     build:
-      context: ./app
+      context: ./app-migrated # UPDATED CONTEXT
       dockerfile: Dockerfile
-    container_name: kitchensink-app
+    container_name: kitchensink-app-migrated # Renamed container for clarity
     ports:
       - "8080:8080"  # Web interface
-      - "9990:9990"  # Admin console
+      # - "9990:9990" # Admin console - Quarkus doesn't have a WildFly-like admin console on 9990 by default
     networks:
       - kitchensink-network
     environment:
       - JAVA_OPTS=-Xms512m -Xmx1024m
+      # MongoDB connection details can be passed here if not using Dev Services in prod
+      # - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017 
+      # - QUARKUS_MONGODB_DATABASE=kitchensinkDB
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/kitchensink"]
+      # Test against a simple API endpoint of the migrated app. 
+      # Path is relative to the root inside the container.
+      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/app/api/members"] # UPDATED HEALTHCHECK PATH
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 60s # Quarkus apps start fast, but keep generous for CI
     restart: unless-stopped
-    volumes:
-      - wildfly-logs:/opt/jboss/wildfly/standalone/log
+    # volumes:
+      # - wildfly-logs:/opt/jboss/wildfly/standalone/log # WildFly specific, Quarkus logs to console by default
 
   ui-tests:
     build:

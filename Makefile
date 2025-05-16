@@ -51,42 +51,43 @@ clean: stop
 
 # Run unit tests for the main application
 test:
-	@echo "Running application tests in app/ directory..."
-	(cd app && \
-		echo "Validating application code style..." && \
-		mvn checkstyle:check && \
-		echo "Running application unit tests..." && \
-		mvn dependency:resolve clean test)
+	@echo "Running application tests in app-migrated/ directory..."
+	(cd app-migrated && \
+		echo "Validating application code style (Quarkus)..." && \
+		mvn spotless:check && \
+		echo "Running application unit tests (Quarkus)..." && \
+		mvn test)
 
 # Run unit tests with code coverage for the main application
 test-coverage:
-	@echo "Running application tests with coverage in app/ directory..."
-	(cd app && \
-		echo "Validating application code style..." && \
-		mvn checkstyle:check && \
-		echo "Running application unit tests with JaCoCo code coverage..." && \
-		mvn dependency:resolve clean test jacoco:report)
+	@echo "Running application tests with coverage in app-migrated/ directory..."
+	(cd app-migrated && \
+		echo "Validating application code style (Quarkus)..." && \
+		mvn spotless:check && \
+		echo "Running application unit tests with JaCoCo code coverage (Quarkus)..." && \
+		mvn test -Pcoverage)
 
 # Open the coverage report in a browser (OS dependent)
-# Note: This now expects the report to be in app/target/
+# Note: This now expects the report to be in app-migrated/target/
 test-report:
-	@echo "Opening coverage report from app/target/site/jacoco/index.html..."
+	@echo "Opening coverage report from app-migrated/target/site/jacoco/index.html..."
 	@if [ "$(shell uname)" = "Darwin" ]; then \
-		open app/target/site/jacoco/index.html; \
+		open app-migrated/target/site/jacoco/index.html; \
 	elif [ "$(shell uname)" = "Linux" ]; then \
-		xdg-open app/target/site/jacoco/index.html; \
+		xdg-open app-migrated/target/site/jacoco/index.html; \
 	else \
-		echo "Please open app/target/site/jacoco/index.html in your browser"; \
+		echo "Please open app-migrated/target/site/jacoco/index.html in your browser"; \
 	fi
 
 # Run acceptance tests
 acceptance-test:
-	@echo "Starting application for acceptance tests (docker-compose.yml in root)..."
+	@echo "Starting MIGRATED application for acceptance tests (docker-compose.yml in root)..."
+	docker-compose build app
 	docker-compose up -d app
-	@echo "Waiting for application to start (using healthcheck)..."
+	@echo "Waiting for MIGRATED application to start (using healthcheck)..."
 	@echo "Application presumed started by docker-compose dependency management."
-	@echo "Running acceptance tests from acceptance-tests/ directory..."
-	cd acceptance-tests && mvn test
+	@echo "Running acceptance tests from acceptance-tests/ directory (against migrated app)..."
+	(cd acceptance-tests && mvn test -Dapp.base.url=http://localhost:8080/rest/app/api)
 	@echo "Stopping application after acceptance tests (docker-compose.yml in root)..."
 	docker-compose down -v
 	@echo "Acceptance tests finished."
