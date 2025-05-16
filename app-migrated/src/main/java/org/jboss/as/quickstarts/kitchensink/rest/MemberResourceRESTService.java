@@ -16,8 +16,11 @@
  */
 package org.jboss.as.quickstarts.kitchensink.rest;
 
-import io.quarkus.panache.common.Sort; // Added import for Sort
-import jakarta.enterprise.context.RequestScoped;
+import io.quarkus.mongodb.panache.PanacheMongoEntityBase; // For member.id access if needed
+import io.quarkus.panache.common.Sort;
+import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateInstance;
+import jakarta.enterprise.context.ApplicationScoped; // Keep if this becomes more stateful, or dependent for JAX-RS
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -26,39 +29,45 @@ import jakarta.validation.Validator;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.bson.types.ObjectId; // For MongoDB ObjectId
+import jakarta.ws.rs.core.UriBuilder;
+import org.bson.types.ObjectId; 
 import org.jboss.as.quickstarts.kitchensink.model.Member;
-import org.jboss.logging.Logger; // Changed to JBoss Logging
-// Removed: MemberRepository and MemberRegistration imports for now, will use Panache static methods or re-introduce later.
+import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration; // Will inject this now
+import org.jboss.logging.Logger;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-// import java.util.logging.Logger; // Removed java.util.logging.Logger
+import java.util.stream.Collectors;
 
-@Path("/members")
-@RequestScoped
+@Path("/members") // Base path for API still /rest/members due to application.properties
+                  // UI paths will be sub-paths here or a different @Path class for UI
+@ApplicationScoped // Changed from @RequestScoped to allow @Inject on Template if it needs broader scope
 public class MemberResourceRESTService {
 
-    // No @Inject needed for static Logger with JBoss Logging if used as follows:
     private static final Logger log = Logger.getLogger(MemberResourceRESTService.class);
 
     @Inject
-    private Validator validator;
+    Validator validator;
 
-    // Placeholder for future MemberRegistration service if complex logic is needed beyond persist.
-    // For now, direct persistence is used.
+    @Inject
+    MemberRegistration registrationService; // Inject the registration service
 
+    @Inject
+    Template member; // Injects the member.html template
+
+    // API Endpoints (existing)
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public List<Member> listAllMembers() {
-        return Member.listAll(Sort.ascending("name")); // Corrected sort
+        return Member.listAll(Sort.ascending("name"));
     }
 
     @GET
-    @Path("/{id}") // Changed from id:[0-9][0-9]* to support ObjectId string
+    @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Member lookupMemberById(@PathParam("id") String id) {
         ObjectId objectId;
@@ -67,49 +76,126 @@ public class MemberResourceRESTService {
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid ID format", Response.Status.BAD_REQUEST);
         }
-        Member member = Member.findById(objectId);
-        if (member == null) {
+        Member memberEntity = Member.findById(objectId);
+        if (memberEntity == null) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
-        return member;
+        return memberEntity;
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createMember(Member member) {
+    public Response createMember(Member newMember) { // API endpoint for JSON
         Response.ResponseBuilder builder;
         try {
-            validateMember(member);
-            // In a real app, member object from request might be a DTO.
-            // Here we assume it's the entity directly for simplicity matching original.
-            member.id = null; // Ensure Panache generates a new ID if one was accidentally passed
-            member.persist(); // Using Panache Active Record
-            // Optionally, fire an event here if other parts of the app need to react
-            // @Inject Event<Member> memberEventSrc; memberEventSrc.fire(member);
-            builder = Response.status(Response.Status.CREATED).entity(member); // Return created member with ID
+            newMember.id = null; 
+            validateMember(newMember, null); 
+            registrationService.register(newMember); 
+            builder = Response.status(Response.Status.CREATED).entity(newMember);
         } catch (ConstraintViolationException ce) {
             builder = createViolationResponse(ce.getConstraintViolations());
         } catch (ValidationException e) {
             Map<String, String> responseObj = new HashMap<>();
-            responseObj.put("email", "Email taken or other validation error: " + e.getMessage());
+            if (e.getMessage() != null && e.getMessage().startsWith("Email already exists")) {
+                responseObj.put("email", "Email taken");
+            } else {
+                // Generic validation error if not the specific duplicate email case
+                responseObj.put("validationError", e.getMessage() != null ? e.getMessage() : "Unknown validation error");
+            }
             builder = Response.status(Response.Status.CONFLICT).entity(responseObj);
         } catch (Exception e) {
-            log.error("Error creating member: " + e.getMessage(), e);
+            log.error("Error creating member via API: " + e.getMessage(), e);
             Map<String, String> responseObj = new HashMap<>();
-            responseObj.put("error", "An unexpected error occurred.");
+            responseObj.put("error", "An unexpected error occurred via API.");
             builder = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(responseObj);
         }
         return builder.build();
     }
 
-    private void validateMember(Member member) throws ConstraintViolationException, ValidationException {
-        Set<ConstraintViolation<Member>> violations = validator.validate(member);
+    // UI Endpoints
+    @GET
+    @Path("/ui")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getMemberUIPage(
+        @QueryParam("successMessage") String successMessage,
+        @QueryParam("newMemberName") String newMemberName, // For repopulating form on error
+        @QueryParam("newMemberEmail") String newMemberEmail,
+        @QueryParam("newMemberPhoneNumber") String newMemberPhoneNumber,
+        @QueryParam("validationErrors") List<String> validationErrors // Simplified error display
+    ) {
+        List<Member> members = Member.listAll(Sort.ascending("name"));
+        Map<String, Object> templateData = new HashMap<>();
+        templateData.put("members", members);
+        
+        Member repopulateMember = new Member();
+        if (newMemberName != null) repopulateMember.setName(newMemberName);
+        if (newMemberEmail != null) repopulateMember.setEmail(newMemberEmail);
+        if (newMemberPhoneNumber != null) repopulateMember.setPhoneNumber(newMemberPhoneNumber);
+        templateData.put("newMember", repopulateMember);
+
+        if (successMessage != null && !successMessage.isBlank()) {
+            templateData.put("flash_successMessage", successMessage);
+        }
+        if (validationErrors != null && !validationErrors.isEmpty()) {
+            // This is a simplified error display. Qute template expects map for validationMessages.
+            // For more detailed field-specific errors, this would need more structure.
+            templateData.put("flash_errorMessages", validationErrors);
+        }
+        return member.data(templateData);
+    }
+
+    @POST
+    @Path("/ui/register")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Response registerMemberFromUI(
+            @FormParam("name") String name,
+            @FormParam("email") String email,
+            @FormParam("phoneNumber") String phoneNumber) {
+        
+        Member newMember = new Member();
+        newMember.setName(name);
+        newMember.setEmail(email);
+        newMember.setPhoneNumber(phoneNumber);
+
+        UriBuilder redirectUriBuilder = UriBuilder.fromPath("/rest/members/ui"); // Path relative to context root
+
+        try {
+            validateMember(newMember, null); // Pass null for currentMemberId
+            registrationService.register(newMember);
+            redirectUriBuilder.queryParam("successMessage", "Registration successful!");
+        } catch (ConstraintViolationException ce) {
+            log.debug("Validation errors from UI: " + ce.getConstraintViolations());
+            List<String> errors = ce.getConstraintViolations().stream()
+                                    .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
+                                    .collect(Collectors.toList());
+            redirectUriBuilder.queryParam("validationErrors", errors.toArray(new String[0]));
+            // Repopulate form fields on error
+            redirectUriBuilder.queryParam("newMemberName", name);
+            redirectUriBuilder.queryParam("newMemberEmail", email);
+            redirectUriBuilder.queryParam("newMemberPhoneNumber", phoneNumber);
+        } catch (ValidationException ve) { // Custom validation like duplicate email
+            log.debug("Validation exception from UI: " + ve.getMessage());
+            redirectUriBuilder.queryParam("validationErrors", ve.getMessage());
+            redirectUriBuilder.queryParam("newMemberName", name);
+            redirectUriBuilder.queryParam("newMemberEmail", email);
+            redirectUriBuilder.queryParam("newMemberPhoneNumber", phoneNumber);
+        } catch (Exception e) {
+            log.error("Error registering member from UI: " + e.getMessage(), e);
+            redirectUriBuilder.queryParam("validationErrors", "An unexpected error occurred.");
+        }
+        URI redirectUri = redirectUriBuilder.build();
+        return Response.seeOther(redirectUri).build();
+    }
+
+    // Shared validation logic
+    private void validateMember(Member memberToValidate, ObjectId currentMemberId) throws ConstraintViolationException, ValidationException {
+        Set<ConstraintViolation<Member>> violations = validator.validate(memberToValidate);
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(new HashSet<>(violations));
         }
-        if (member.getEmail() != null && emailAlreadyExists(member.getEmail(), member.id)) {
-            throw new ValidationException("Email already exists");
+        if (memberToValidate.getEmail() != null && emailAlreadyExists(memberToValidate.getEmail(), currentMemberId)) {
+            throw new ValidationException("Email already exists for user: " + memberToValidate.getEmail());
         }
     }
 
@@ -122,16 +208,17 @@ public class MemberResourceRESTService {
         return Response.status(Response.Status.BAD_REQUEST).entity(responseObj);
     }
 
-    // Check if email exists for a *different* member (if id is provided for an update scenario)
     private boolean emailAlreadyExists(String email, ObjectId currentMemberId) {
+        // Find by email - Panache MongoEntity provides find method
         Member existingMember = Member.find("email", email).firstResult();
         if (existingMember == null) {
-            return false; // Email does not exist
+            return false; 
         }
+        // If we are checking for a new member (currentMemberId is null), then any existing is a duplicate.
         if (currentMemberId == null) {
-            return true; // Creating new member and email exists
+            return true; 
         }
-        // Updating existing member, check if found email belongs to a different member
+        // If updating an existing member, it's a duplicate if the found email belongs to a different member.
         return !existingMember.id.equals(currentMemberId);
     }
 }

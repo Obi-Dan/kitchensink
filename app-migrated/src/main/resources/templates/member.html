@@ -1,0 +1,103 @@
+{! 
+  This is a Qute template for the Kitchensink member registration page.
+  It replicates the functionality of the original index.xhtml.
+!}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Kitchensink Member Registration (Quarkus)</title>
+    <!-- Assuming screen.css will be moved to src/main/resources/META-INF/resources/css/screen.css -->
+    <!-- Or adjust path if using Quarkus web resources conventions -->
+    <link rel="stylesheet" type="text/css" href="/css/screen.css">
+</head>
+<body>
+    <div id="container">
+        <div id="content">
+            <h1>Welcome to Kitchensink (Quarkus Edition)!</h1>
+            <p>Register a new member or view existing members.</p>
+
+            <h2>Member Registration</h2>
+            {#if flash_errorMessages?? && !flash_errorMessages.empty}
+                <div style="color: red;">
+                    <p><strong>Errors:</strong></p>
+                    <ul>
+                        {#for msg in flash_errorMessages}
+                            <li>{msg}</li>
+                        {/for}
+                    </ul>
+                </div>
+            {/if}
+            {#if flash_successMessage??}
+                <div style="color: green;">
+                    <p><strong>{flash_successMessage}</strong></p>
+                </div>
+            {/if}
+
+            <form action="/rest/members/ui/register" method="POST">
+                <h:panelGrid columns="3" columnClasses="titleCell"> <!-- Visual placeholder, will be divs/spans -->
+                    <div><label for="name">Name:</label></div>
+                    <div><input type="text" id="name" name="name" value="{newMember.name ?? ''}" required /></div>
+                    <div><span class="invalid">{validationMessages.name ?? ''}</span></div>
+
+                    <div><label for="email">Email:</label></div>
+                    <div><input type="email" id="email" name="email" value="{newMember.email ?? ''}" required /></div>
+                    <div><span class="invalid">{validationMessages.email ?? ''}</span></div>
+
+                    <div><label for="phoneNumber">Phone #:</label></div>
+                    <div><input type="text" id="phoneNumber" name="phoneNumber" value="{newMember.phoneNumber ?? ''}" required pattern="[0-9]{10,12}" title="Phone number must be 10 to 12 digits."/></div>
+                    <div><span class="invalid">{validationMessages.phoneNumber ?? ''}</span></div>
+                </h:panelGrid>
+                <p>
+                    <input type="submit" value="Register" class="register" />
+                </p>
+            </form>
+
+            <h2>Members</h2>
+            {#if members.empty}
+                <em>No registered members.</em>
+            {#else}
+                <table class="simpletablestyle">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone #</th>
+                            <th>REST URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#for member in members}
+                        <tr>
+                            <td>{member.id}</td>
+                            <td>{member.name}</td>
+                            <td>{member.email}</td>
+                            <td>{member.phoneNumber}</td>
+                            <td><a href="/rest/members/{member.id}">/rest/members/{member.id}</a></td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                     <tfoot>
+                        <tr>
+                            <td colspan="5">
+                                REST URL for all members: <a href="/rest/members">/rest/members</a>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            {/if}
+        </div>
+        <div id="aside">
+            <p>Learn more about Quarkus.</p>
+            <ul>
+                <li><a href="https://quarkus.io">Quarkus.io</a></li>
+                <li><a href="https://quarkus.io/guides/">Quarkus Guides</a></li>
+            </ul>
+        </div>
+        <div id="footer">
+            <p>Migrated from JBoss EAP to Quarkus.</p>
+        </div>
+    </div>
+</body>
+</html> 
