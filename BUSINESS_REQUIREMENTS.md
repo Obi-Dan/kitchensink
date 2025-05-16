@@ -40,6 +40,7 @@ The KitchenSink application is a web-enabled database application that demonstra
 - **REQ-2.1.9:** If no members are registered, the UI shall display a message indicating this (e.g., "No registered members.").
 - **REQ-2.1.10:** Each row in the member table shall include a clickable REST URL link specific to that member.
 - **REQ-2.1.11:** The UI shall display a general REST URL link to access all members, typically associated with the members table.
+- **REQ-2.1.12:** When a registration attempt is made with an email address that already exists in the system, the UI shall display a clear and specific error message indicating the duplication, and the member shall not be registered. This message could be global or field-specific.
 
 ### 3. REST API
 
