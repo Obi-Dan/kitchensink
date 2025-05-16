@@ -46,7 +46,7 @@ logs:
 # Clean up resources
 clean: stop
 	@echo "Cleaning up Docker resources (docker-compose.yml in root)..."
-	docker-compose down -v --rmi local
+	docker-compose down -v --rmi local --remove-orphans
 	@echo "Cleanup complete."
 
 # Run unit tests for the main application
@@ -82,12 +82,17 @@ test-report:
 # Run acceptance tests
 acceptance-test:
 	@echo "Starting MIGRATED application for acceptance tests (docker-compose.yml in root)..."
-	docker-compose build app
-	docker-compose up -d app
-	@echo "Waiting for MIGRATED application to start (using healthcheck)..."
-	@echo "Application presumed started by docker-compose dependency management."
+	docker-compose rm -s -f mongo || true # Ensure mongo is gone, ignore error if not found
+	docker-compose build app mongo # Ensure migrated app and mongo are built
+	docker-compose up -d app # This will also start mongo due to depends_on
+	@echo "Waiting for MIGRATED application to start (using healthcheck and additional sleep)..."
+	@sleep 20 # Increased sleep slightly more
+	@echo "Initial logs from app container:"
+	docker-compose logs --tail="100" app
 	@echo "Running acceptance tests from acceptance-tests/ directory (against migrated app)..."
-	(cd acceptance-tests && mvn test -Dapp.base.url=http://localhost:8080/rest/app/api)
+	@(cd acceptance-tests && mvn test -Dapp.base.url=http://localhost:8080/rest/app/api) || \
+		(echo "Acceptance tests FAILED. Displaying app logs:" && docker-compose logs --tail="500" app && docker-compose down -v && exit 1)
+	@echo "Acceptance tests PASSED."
 	@echo "Stopping application after acceptance tests (docker-compose.yml in root)..."
 	docker-compose down -v
 	@echo "Acceptance tests finished."
@@ -97,13 +102,32 @@ ui-test:
 	@echo "Cleaning up old UI test videos..."
 	rm -rf ui-acceptance-tests/target/videos/*
 	@echo "Building services if necessary (docker-compose.yml in root)..."
-	docker-compose build app ui-tests
-	@echo "Starting application service for UI acceptance tests (docker-compose.yml in root)..."
-	docker-compose up -d app
+	docker-compose build app ui-tests mongo # build all three
+	@echo "Starting application services for UI acceptance tests (docker-compose.yml in root)..."
+	docker-compose up -d app mongo # Start app and mongo
+	@echo "Waiting for app service to be healthy (UI tests depend on app)..."
+	@timeout_seconds=180; \
+	start_time=$$(date +%s); \
+	while ! docker-compose ps app | grep -q 'healthy'; do \
+		current_time=$$(date +%s); \
+		elapsed_time=$$((current_time - start_time)); \
+		if [ $$elapsed_time -ge $$timeout_seconds ]; then \
+			echo "Application service (app) failed to become healthy within $$timeout_seconds seconds."; \
+			docker-compose logs app; \
+			docker-compose down -v; \
+			exit 1; \
+		fi; \
+		echo "Still waiting for app service to be healthy... $$elapsed_time/$$timeout_seconds s"; \
+		sleep 5; \
+	done
+	@echo "App service is healthy. Showing initial app logs:"
+	docker-compose logs --tail="100" app
 	@echo "Running UI acceptance tests in a container (service: ui-tests)..."
-	docker-compose run --rm ui-tests
-	@echo "Stopping application service after UI acceptance tests (docker-compose.yml in root)..."
-	docker-compose down -v
+	@(docker-compose run --rm ui-tests) || \
+		(echo "UI tests FAILED. Displaying full app logs:" && docker-compose logs --tail="500" app && echo "Displaying full ui-tests container logs:" && docker-compose logs ui-tests && docker-compose down -v && exit 1)
+	@echo "UI tests PASSED or completed."
+	@echo "Stopping application services after UI acceptance tests (docker-compose.yml in root)..."
+	docker-compose down -v 
 	@echo "UI Acceptance tests finished. Videos and reports should be in ui-acceptance-tests/target/"
 
 # Open the UI test video directory
