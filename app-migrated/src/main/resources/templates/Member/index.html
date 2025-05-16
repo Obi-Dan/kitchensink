@@ -62,9 +62,7 @@
             </form>
 
             <h2>Members</h2>
-            {#if members.size == 0}
-                <em>No registered members.</em>
-            {#else}
+            {#if members}
                 <table class="simpletablestyle">
                     <thead>
                         <tr>
@@ -92,6 +90,8 @@
                         </tr>
                     </tfoot>
                 </table>
+            {#else}
+                <em>No registered members.</em>
             {/if}
         </div>
         <div id="aside">
