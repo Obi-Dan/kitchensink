@@ -3,30 +3,47 @@ version: '3.8'
 services:
   app: # Migrated Application
     build:
-      context: ./app-migrated # UPDATED CONTEXT
+      context: ./app-migrated
       dockerfile: Dockerfile
-    container_name: kitchensink-app-migrated # Renamed container for clarity
+    container_name: kitchensink-app-migrated
     ports:
-      - "8080:8080"  # Web interface
-      # - "9990:9990" # Admin console - Quarkus doesn't have a WildFly-like admin console on 9990 by default
+      - "8080:8080"
     networks:
       - kitchensink-network
     environment:
       - JAVA_OPTS=-Xms512m -Xmx1024m
-      # MongoDB connection details can be passed here if not using Dev Services in prod
-      # - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017 
-      # - QUARKUS_MONGODB_DATABASE=kitchensinkDB
+      - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017 # Connect to mongo service on docker network
+      - QUARKUS_MONGODB_DATABASE=kitchensinkDB # This is already in application.properties but can be overridden
+    depends_on:
+      mongo: # Depends on the mongo service
+        condition: service_healthy # Or service_started if mongo image doesn't have a good healthcheck
     healthcheck:
-      # Test against a simple API endpoint of the migrated app. 
-      # Path is relative to the root inside the container.
-      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/app/api/members"] # UPDATED HEALTHCHECK PATH
+      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/app/api/members"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s # Quarkus apps start fast, but keep generous for CI
+      start_period: 60s
     restart: unless-stopped
-    # volumes:
-      # - wildfly-logs:/opt/jboss/wildfly/standalone/log # WildFly specific, Quarkus logs to console by default
+
+  mongo:
+    image: mongo:7.0
+    container_name: kitchensink-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - kitchensink-network
+    volumes:
+      - mongodb_data:/data/db
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: |
+        mongosh --eval \
+        "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [ { _id: 0, host: 'localhost:27017' } ] ).ok }" \
+        --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   ui-tests:
     build:
@@ -50,4 +67,5 @@ networks:
         - subnet: 172.28.0.0/16
 
 volumes:
-  wildfly-logs: 
+  # wildfly-logs: # No longer needed for Quarkus app logging primarily to console
+  mongodb_data: # For MongoDB persistence 

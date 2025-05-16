@@ -230,7 +230,7 @@ public class MemberRegistrationAcceptanceTest {
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
-            .body("phoneNumber", containsString("digits must be between 0 and 12")); // Adjusted message from Member.java Digits constraint
+            .body("phoneNumber", containsString("numeric value out of bounds")); // REVERTED to more generic part of @Digits message
     }
 
     @Test
@@ -358,6 +358,7 @@ public class MemberRegistrationAcceptanceTest {
             .add("email", emailCharlie)
             .add("phoneNumber", generateValidPhoneNumber()).build();
 
+        // Ensure all registrations are successful (200 or 201)
         given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
         given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
         given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
