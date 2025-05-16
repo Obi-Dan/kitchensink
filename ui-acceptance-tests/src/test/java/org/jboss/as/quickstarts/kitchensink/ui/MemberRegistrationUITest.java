@@ -62,6 +62,15 @@ public class MemberRegistrationUITest {
 
     // Helper method to verify page title
     private void verifyPageTitle(Page currentPage, String expectedTitle) {
+        currentPage.waitForLoadState(LoadState.DOMCONTENTLOADED, new Page.WaitForLoadStateOptions().setTimeout(10000));
+        currentPage.waitForLoadState(LoadState.LOAD, new Page.WaitForLoadStateOptions().setTimeout(10000));
+        // Add a small explicit wait for the title to potentially stabilize after load events
+        try {
+            currentPage.waitForFunction("() => document.title !== '' && document.title === '" + expectedTitle + "'", null, new Page.WaitForFunctionOptions().setTimeout(5000));
+        } catch (TimeoutError e) {
+            System.err.println("Timeout waiting for document.title to be '" + expectedTitle + "'. Current title: '" + currentPage.title() + "'");
+            // Fall through to the assertion which will likely fail and give a clearer Playwright error.
+        }
         assertThat(currentPage).hasTitle(expectedTitle);
     }
 
@@ -124,7 +133,7 @@ public class MemberRegistrationUITest {
         // Footer content check
         Locator footer = currentPage.locator("div#footer");
         // Updated to match default.xhtml: specific text content
-        assertThat(footer.locator("p").filter(new Locator.FilterOptions().setHasText("This project was generated from a Maven archetype from JBoss."))).isVisible(); 
+        assertThat(footer.locator("p").filter(new Locator.FilterOptions().setHasText("This project was generated from a Maven archetype from JBoss (migrated to Quarkus)."))).isVisible(); // UPDATED TEXT
         // Footer image assertion removed as it's not in default.xhtml
         // assertThat(footer.locator("img[alt='Powered by JBoss AS 7']")).isVisible(); 
 
