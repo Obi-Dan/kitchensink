@@ -12,7 +12,7 @@ services:
       - kitchensink-network
     environment:
       - JAVA_OPTS=-Xms512m -Xmx1024m
-      - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017 # Connect to mongo service on docker network
+      - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017/?replicaSet=rs0 # Added replicaSet option
       - QUARKUS_MONGODB_DATABASE=kitchensinkDB # This is already in application.properties but can be overridden
     depends_on:
       mongo: # Depends on the mongo service
