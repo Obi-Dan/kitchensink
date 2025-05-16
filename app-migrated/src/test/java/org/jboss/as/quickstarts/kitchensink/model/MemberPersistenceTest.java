@@ -1,20 +1,38 @@
+/*
+ * JBoss, Home of Professional Open Source
+ * Copyright 2024, Red Hat, Inc. and/or its affiliates, and individual
+ * contributors by the @authors tag. See the copyright.txt in the
+ * distribution for a full listing of individual contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */ 
 package org.jboss.as.quickstarts.kitchensink.model;
 
 import io.quarkus.test.junit.QuarkusTest;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-// import org.bson.types.ObjectId; // ObjectId is part of PanacheMongoEntity's id field
 
-import java.util.List;
+// import org.bson.types.ObjectId; // ObjectId is part of PanacheMongoEntity's id field
 
 @QuarkusTest
 public class MemberPersistenceTest {
 
     // Helper method to clean up data before/after tests if needed
-    // Transactional for deleteAll/persist might be needed if not using active record directly in test setup
-    // For Panache active record, operations are generally auto-committed or handled by test transaction.
+    // Transactional for deleteAll/persist might be needed if not using active record directly in
+    // test setup
+    // For Panache active record, operations are generally auto-committed or handled by test
+    // transaction.
     private void cleanup() {
         Member.deleteAll();
     }
@@ -61,8 +79,9 @@ public class MemberPersistenceTest {
 
         // Update
         foundById.setName("Updated Test User");
-        foundById.update(); // or foundById.persistOrUpdate() or Member.update(foundById) depending on Panache flavor
-        
+        foundById.update(); // or foundById.persistOrUpdate() or Member.update(foundById) depending
+        // on Panache flavor
+
         Member updatedMember = Member.findById(member.id);
         Assertions.assertNotNull(updatedMember);
         Assertions.assertEquals("Updated Test User", updatedMember.getName());
@@ -89,16 +108,23 @@ public class MemberPersistenceTest {
 
         Member member2 = new Member("User Two", "duplicate@example.com", "4445556666");
         try {
-            member2.persist(); 
-            // If the unique index works, the above line should throw an exception from MongoDB driver
+            member2.persist();
+            // If the unique index works, the above line should throw an exception from MongoDB
+            // driver
             // e.g., com.mongodb.MongoWriteException with error code E11000 duplicate key error
             Assertions.fail("Should have thrown an exception due to duplicate email");
-        } catch (Exception e) { 
-            // Check for MongoDB specific duplicate key error, e.g. using ((MongoWriteException) e).getError().getCode() == 11000
-            // For now, a generic catch is fine for this basic test, but more specific check is better.
-            Assertions.assertTrue(e.getMessage().toLowerCase().contains("duplicate key") || e.getMessage().toLowerCase().contains("e11000"),
-                    "Exception message should indicate a duplicate key error. Got: " + e.getMessage());
+        } catch (Exception e) {
+            // Check for MongoDB specific duplicate key error, e.g. using ((MongoWriteException)
+            // e).getError().getCode() == 11000
+            // For now, a generic catch is fine for this basic test, but more specific check is
+            // better.
+            Assertions.assertTrue(
+                    e.getMessage().toLowerCase().contains("duplicate key")
+                            || e.getMessage().toLowerCase().contains("e11000"),
+                    "Exception message should indicate a duplicate key error. Got: "
+                            + e.getMessage());
         }
-        Assertions.assertEquals(1, Member.count(), "Count should remain 1 after failed duplicate insert");
+        Assertions.assertEquals(
+                1, Member.count(), "Count should remain 1 after failed duplicate insert");
     }
-} 
+}

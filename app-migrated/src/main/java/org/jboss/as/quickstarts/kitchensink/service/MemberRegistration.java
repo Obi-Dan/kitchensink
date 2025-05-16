@@ -13,7 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ */ 
 package org.jboss.as.quickstarts.kitchensink.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,8 +27,7 @@ public class MemberRegistration {
 
     private static final Logger log = Logger.getLogger(MemberRegistration.class);
 
-    @Inject
-    private Event<Member> memberEventSrc;
+    @Inject private Event<Member> memberEventSrc;
 
     public void register(Member member) throws Exception {
         log.info("Registering " + member.getName());

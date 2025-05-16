@@ -14,11 +14,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */ 
-package org.jboss.as.quickstarts.kitchensink.rest;
-
-import io.quarkus.test.junit.QuarkusIntegrationTest;
-
-@QuarkusIntegrationTest
-class MemberResourceIT extends MemberResourceTest {
-    // Execute the same tests but in packaged mode.
-}

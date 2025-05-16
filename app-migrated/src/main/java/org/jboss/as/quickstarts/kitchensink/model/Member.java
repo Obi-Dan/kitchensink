@@ -13,7 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ */ 
 package org.jboss.as.quickstarts.kitchensink.model;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
@@ -26,17 +26,15 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @MongoEntity(collection = "members")
-public class Member extends PanacheMongoEntity { // PanacheMongoEntity provides ObjectId id by default
+public class Member
+        extends PanacheMongoEntity { // PanacheMongoEntity provides ObjectId id by default
 
     @NotNull
     @Size(min = 1, max = 25)
     @Pattern(regexp = "[^0-9]*", message = "Must not contain numbers")
     private String name; // Made public for direct Panache access, or use getters/setters
 
-    @NotNull
-    @NotEmpty
-    @Email
-    private String email; // Made public
+    @NotNull @NotEmpty @Email private String email; // Made public
 
     @NotNull
     @Size(min = 10, max = 12)
@@ -81,4 +79,4 @@ public class Member extends PanacheMongoEntity { // PanacheMongoEntity provides 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-} 
+}

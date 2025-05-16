@@ -1,4 +1,27 @@
+/*
+ * JBoss, Home of Professional Open Source
+ * Copyright 2024, Red Hat, Inc. and/or its affiliates, and individual
+ * contributors by the @authors tag. See the copyright.txt in the
+ * distribution for a full listing of individual contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */ 
 package org.jboss.as.quickstarts.kitchensink.rest;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -10,13 +33,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -38,17 +54,20 @@ public class MemberResourceTest {
         newMember.setEmail("jane.doe@example.com");
         newMember.setPhoneNumber("0987654321");
 
-        String responseBody = given()
-            .contentType(ContentType.JSON)
-            .body(newMember)
-            .when().post("/rest/members")
-            .then()
-                .statusCode(201)
-                .body("id", notNullValue())
-                .body("name", is("Jane Doe"))
-                .body("email", is("jane.doe@example.com"))
-                .extract().body().asString();
-        
+        String responseBody =
+                given().contentType(ContentType.JSON)
+                        .body(newMember)
+                        .when()
+                        .post("/rest/members")
+                        .then()
+                        .statusCode(201)
+                        .body("id", notNullValue())
+                        .body("name", is("Jane Doe"))
+                        .body("email", is("jane.doe@example.com"))
+                        .extract()
+                        .body()
+                        .asString();
+
         createdMemberId = io.restassured.path.json.JsonPath.from(responseBody).getString("id");
         System.out.println("Created member ID: " + createdMemberId);
     }
@@ -60,9 +79,9 @@ public class MemberResourceTest {
         member.persist();
         createdMemberId = member.id.toString();
 
-        given()
-            .when().get("/rest/members")
-            .then()
+        given().when()
+                .get("/rest/members")
+                .then()
                 .statusCode(200)
                 .body("", hasSize(1))
                 .body("[0].name", is("Setup User"));
@@ -75,10 +94,10 @@ public class MemberResourceTest {
         memberToTest.persist();
         String testId = memberToTest.id.toString();
 
-        given()
-            .pathParam("id", testId)
-            .when().get("/rest/members/{id}")
-            .then()
+        given().pathParam("id", testId)
+                .when()
+                .get("/rest/members/{id}")
+                .then()
                 .statusCode(200)
                 .body("id", is(testId))
                 .body("name", is("Specific User"));
@@ -88,10 +107,10 @@ public class MemberResourceTest {
     @Order(4)
     void testLookupMemberById_NotFound() {
         String nonExistentId = new ObjectId().toString();
-        given()
-            .pathParam("id", nonExistentId)
-            .when().get("/rest/members/{id}")
-            .then()
+        given().pathParam("id", nonExistentId)
+                .when()
+                .get("/rest/members/{id}")
+                .then()
                 .statusCode(404);
     }
 
@@ -103,34 +122,34 @@ public class MemberResourceTest {
         invalidMember.setEmail("not-an-email");
         invalidMember.setPhoneNumber("123");
 
-        given()
-            .contentType(ContentType.JSON)
-            .body(invalidMember)
-            .when().post("/rest/members")
-            .then()
+        given().contentType(ContentType.JSON)
+                .body(invalidMember)
+                .when()
+                .post("/rest/members")
+                .then()
                 .statusCode(400)
                 .body("name", notNullValue())
                 .body("email", notNullValue())
                 .body("phoneNumber", notNullValue());
     }
-    
+
     @Test
     @Order(6)
     void testCreateMember_DuplicateEmail() {
         Member member1 = new Member("First User", "duplicate.email@example.com", "1234567890");
-        given()
-            .contentType(ContentType.JSON)
-            .body(member1)
-            .when().post("/rest/members")
-            .then()
+        given().contentType(ContentType.JSON)
+                .body(member1)
+                .when()
+                .post("/rest/members")
+                .then()
                 .statusCode(201);
 
         Member member2 = new Member("Second User", "duplicate.email@example.com", "0987654321");
-        given()
-            .contentType(ContentType.JSON)
-            .body(member2)
-            .when().post("/rest/members")
-            .then()
+        given().contentType(ContentType.JSON)
+                .body(member2)
+                .when()
+                .post("/rest/members")
+                .then()
                 .statusCode(409)
                 .body("email", containsString("Email taken"));
     }
@@ -138,11 +157,7 @@ public class MemberResourceTest {
     @Test
     @Order(7)
     void testListAllMembers_Empty() {
-        Member.deleteAll(); 
-        given()
-          .when().get("/rest/members")
-          .then()
-             .statusCode(200)
-             .body("", empty());
+        Member.deleteAll();
+        given().when().get("/rest/members").then().statusCode(200).body("", empty());
     }
 }
