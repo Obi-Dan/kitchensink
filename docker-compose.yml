@@ -18,18 +18,14 @@ services:
       dockerfile: Dockerfile
     container_name: kitchensink-quarkus-app
     ports:
-      - "8080:8080"
+      - "${APP_HOST_PORT:-8080}:8080" # Host port configurable, container port fixed to 8080
     depends_on:
       - mongodb
     networks:
       - kitchensink-network
     environment:
-      QUARKUS_MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/${QUARKUS_MONGODB_DATABASE:kitchensinkDB}
-      QUARKUS_MONGODB_DATABASE: kitchensinkDB # This is redundant if in conn string but can be kept
-      # If app uses quarkus.mongodb.hosts or similar, adjust here.
-      # For Panache default client, quarkus.mongodb.connection-string is the primary config.
-      # We'll set it in application.properties instead for profile-awareness.
-      # Example: %prod.quarkus.mongodb.connection-string=mongodb://mongodb:27017/kitchensinkDB
+      QUARKUS_MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/${APP_DB_NAME:-kitchensinkDB} # Use APP_DB_NAME
+      QUARKUS_MONGODB_DATABASE: ${APP_DB_NAME:-kitchensinkDB} # Ensure consistency
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/live"]
       interval: 30s
