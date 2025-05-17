@@ -48,7 +48,6 @@ import org.jboss.logging.Logger;
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
 @Path("/members") // Class-level path for API methods, relative to /rest global prefix
-@ApplicationScoped
 public class MemberResourceRESTService {
 
     private static final Logger LOG = Logger.getLogger(MemberResourceRESTService.class);
