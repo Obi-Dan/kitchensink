@@ -85,16 +85,22 @@ public class MemberResourceRESTService {
     @Path("/rest/members/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response lookupMemberByIdApi(@PathParam("id") Long id) {
-        LOG.info("API: Looking up member by id: " + id);
+        LOG.info("API --- Attempting to lookup member by id (Long): " + id);
         Member member =
                 memberRepository
                         .findByIdOptional(id)
                         .orElseThrow(
-                                () ->
-                                        new WebApplicationException(
-                                                "Member with id of " + id + " does not exist.",
-                                                Response.Status.NOT_FOUND));
-        LOG.info("API: Found member: " + member.email);
+                                () -> {
+                                    LOG.warn("API --- Member not found for id: " + id);
+                                    return new WebApplicationException(
+                                            "Member with id of " + id + " does not exist.",
+                                            Response.Status.NOT_FOUND);
+                                });
+        LOG.info(
+                "API --- Successfully found member: "
+                        + member.email
+                        + " with id: "
+                        + member.getId());
         return Response.ok(member).build();
     }
 
