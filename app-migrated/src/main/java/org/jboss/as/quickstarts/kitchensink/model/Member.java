@@ -16,14 +16,13 @@
  */
 package org.jboss.as.quickstarts.kitchensink.model;
 
-import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.io.Serializable;
 
 // For the ID type if explicitly using ObjectId
 
@@ -31,19 +30,18 @@ import jakarta.validation.constraints.Size;
 // response
 // For MongoDB, unique constraints are usually handled by creating a unique index on the collection.
 @MongoEntity(collection = "members")
-public class Member
-        extends PanacheMongoEntity { // Inherit from PanacheMongoEntity for Active Record
+public class Member implements Serializable {
+    /** Default value included to remove warning. Remove or modify at will. */
+    private static final long serialVersionUID = 1L;
 
-    // PanacheMongoEntity provides an 'id' field of type ObjectId by default.
-    // If you need to rename it or use a different type, you can declare it:
-    // public ObjectId id; // This is inherited
+    public Long id;
 
     @NotNull
     @Size(min = 1, max = 25)
     @Pattern(regexp = "[^0-9]*", message = "Must not contain numbers")
     public String name; // Made public for Panache Active Record pattern, or use getters/setters
 
-    @NotNull @NotEmpty @Email public String email; // Made public
+    @NotNull @Email public String email; // Made public
 
     @NotNull
     @Size(min = 10, max = 12)
@@ -91,9 +89,11 @@ public class Member
         this.phoneNumber = phoneNumber;
     }
 
-    // PanacheMongoEntity provides an id of type ObjectId.
-    // If you need a String representation of the id:
-    public String getStringId() {
-        return id != null ? id.toString() : null;
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

@@ -17,55 +17,67 @@
 package org.jboss.as.quickstarts.kitchensink.service;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
+import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class DataSeeder {
 
     private static final Logger LOG = Logger.getLogger(DataSeeder.class);
+    private static final String MEMBER_ID_SEQUENCE_NAME = "memberId";
 
-    // Injecting the collection directly to create an index. PanacheEntityBase doesn't expose this
-    // directly.
-    // This approach is robust for index creation.
-    // Alternatively, for PanacheReactiveMongoEntity, you can use
-    // .mongoDatabase().getCollection(...)
-    // For PanacheMongoEntity, we can get the collection via Member.mongoCollection()
+    @Inject MongoDatabase mongoDatabase;
 
-    public void onStart(@Observes StartupEvent ev) {
+    @Inject MemberRepository memberRepository;
+
+    @Inject SequenceGeneratorService sequenceGenerator;
+
+    void onStart(@Observes StartupEvent ev) {
         LOG.info("DataSeeder: Checking and seeding initial data if necessary.");
 
-        // Create Unique Index on Email if it doesn't exist
         try {
-            MongoCollection<Member> memberCollection = Member.mongoCollection();
-            // Check if index already exists (optional, createIndex is idempotent if options are
-            // same)
-            // For simplicity, we just try to create it.
+            MongoCollection<Member> memberCollection =
+                    mongoDatabase.getCollection("members", Member.class);
             memberCollection.createIndex(
                     Indexes.ascending("email"), new IndexOptions().unique(true));
             LOG.info(
                     "Successfully ensured unique index exists on 'email' field for 'members' collection.");
         } catch (Exception e) {
-            // Log error, but don't prevent startup. MongoDB might already have it, or other issues.
-            LOG.error("Error creating unique index on email: " + e.getMessage());
+            LOG.error("Failed to create unique index on email for members collection", e);
         }
 
-        // Seed initial member data
-        if (Member.count() == 0) {
+        // Initialize sequence to -1 so the first ID generated is 0.
+        sequenceGenerator.initializeSequence(MEMBER_ID_SEQUENCE_NAME, -1L);
+        LOG.info(
+                "Initialized sequence '"
+                        + MEMBER_ID_SEQUENCE_NAME
+                        + "' to -1 if it did not exist (for IDs starting at 0).");
+
+        if (memberRepository.count() == 0) {
             LOG.info("No members found. Seeding initial data.");
-            Member john = new Member();
-            john.name = "John Smith";
-            john.email = "john.smith@mailinator.com";
-            john.phoneNumber = "2125551212";
-            john.persist();
-            LOG.info("Default member 'John Smith' seeded.");
+            Member defaultMember = new Member();
+            defaultMember.setId(sequenceGenerator.getNextSequence(MEMBER_ID_SEQUENCE_NAME));
+            defaultMember.name = "John Smith";
+            defaultMember.email = "john.smith@mailinator.com";
+            defaultMember.phoneNumber = "2125551212";
+            memberRepository.persist(defaultMember);
+            LOG.info(
+                    "Default member '"
+                            + defaultMember.name
+                            + "' seeded with ID: "
+                            + defaultMember.getId());
         } else {
-            LOG.info("Database already contains members. No seeding performed.");
+            LOG.info(
+                    "DataSeeder: Members already exist, no seeding required. Count: "
+                            + memberRepository.count());
         }
     }
 }

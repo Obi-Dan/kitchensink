@@ -25,10 +25,17 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,8 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.bson.types.ObjectId;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
+import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
 import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration;
 import org.jboss.logging.Logger;
 
@@ -46,7 +53,7 @@ import org.jboss.logging.Logger;
  *
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
-@Path("/app") // Changed base path to /app for UI and API separation if needed
+@Path("/app")
 @ApplicationScoped
 public class MemberResourceRESTService {
 
@@ -54,40 +61,42 @@ public class MemberResourceRESTService {
 
     @Inject Validator validator;
 
-    @Inject MemberRegistration registration;
+    @Inject MemberRegistration registrationService;
+
+    @Inject MemberRepository memberRepository;
 
     @Inject
-    @Location("Member/index.html") // Specify the path to the template
-    Template index; // Injects templates/Member/index.html based on resource method return type
+    @Location("Member/index.html")
+    Template index;
 
-    // REST API methods (prefixed with /api for clarity, original /members path can be kept if no
-    // conflict)
     @GET
     @Path("/api/members")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Member> listAllMembersApi() {
+    public Response getAllMembersApi() {
         LOG.info("API: Listing all members (ordered by name)");
-        return Member.findAll(Sort.by("name")).list();
+        List<Member> members = memberRepository.listAll(Sort.by("name"));
+        if (members.isEmpty()) {
+            LOG.info("API: No members found.");
+            return Response.status(Response.Status.NO_CONTENT).entity("[]").build();
+        }
+        return Response.ok(members).build();
     }
 
     @GET
     @Path("/api/members/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Member lookupMemberByIdApi(@PathParam("id") String id) {
+    public Response lookupMemberByIdApi(@PathParam("id") Long id) {
         LOG.info("API: Looking up member by id: " + id);
-        ObjectId objectId;
-        try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            LOG.warn("API: Invalid ObjectId format for id: " + id);
-            throw new WebApplicationException(
-                    "Invalid member ID format", Response.Status.BAD_REQUEST);
-        }
-        Member member = Member.findById(objectId);
-        if (member == null) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        }
-        return member;
+        Member member =
+                memberRepository
+                        .findByIdOptional(id)
+                        .orElseThrow(
+                                () ->
+                                        new WebApplicationException(
+                                                "Member with id of " + id + " does not exist.",
+                                                Response.Status.NOT_FOUND));
+        LOG.info("API: Found member: " + member.email);
+        return Response.ok(member).build();
     }
 
     @POST
@@ -104,6 +113,15 @@ public class MemberResourceRESTService {
                     .entity("Member data is required.")
                     .build();
         }
+        if (member.getId() != null) {
+            LOG.warn("API: Member payload for creation contains an ID: " + member.getId());
+            Map<String, String> responseObj = new HashMap<>();
+            responseObj.put(
+                    "id",
+                    "ID must not be set for new member registration. It will be auto-generated.");
+            return Response.status(Response.Status.CONFLICT).entity(responseObj).build();
+        }
+
         LOG.info(
                 "API: Attempting to create member: " + member.email + " with name: " + member.name);
         Response.ResponseBuilder builder;
@@ -111,9 +129,9 @@ public class MemberResourceRESTService {
             LOG.info("API: Validating member bean for: " + member.email);
             validateMemberBean(member);
             LOG.info("API: Calling registration service for: " + member.email);
-            registration.register(member);
+            registrationService.register(member);
             LOG.info("API: Registration service call completed for: " + member.email);
-            builder = Response.ok(member);
+            builder = Response.status(Response.Status.CREATED).entity(member);
         } catch (ConstraintViolationException ce) {
             LOG.warn("API: ConstraintViolationException for member: " + member.email, ce);
             builder = createViolationResponse(ce.getConstraintViolations());
@@ -137,16 +155,16 @@ public class MemberResourceRESTService {
         return builder.build();
     }
 
-    // UI Serving Methods
     @GET
-    @Path("/ui") // Path for the main UI page
+    @Path("/ui")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance getUIPage() {
+    public TemplateInstance getWebUi() {
         LOG.info("Serving UI page");
-        List<Member> members = Member.findAll(Sort.by("name")).list();
+        List<Member> members = memberRepository.listAll(Sort.by("name"));
+        Member newMember = new Member();
         return index.data("members", members)
-                .data("newMember", new Member()) // Empty member for the form
-                .data("errors", Collections.emptyMap()) // No errors initially
+                .data("newMember", newMember)
+                .data("errors", Collections.emptyMap())
                 .data("globalMessages", Collections.emptyList());
     }
 
@@ -154,25 +172,24 @@ public class MemberResourceRESTService {
     @Path("/ui/register")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance registerMemberFromUI(MultivaluedMap<String, String> formParams) {
-        String name = formParams.getFirst("name");
-        String email = formParams.getFirst("email");
-        String phoneNumber = formParams.getFirst("phoneNumber");
+    public TemplateInstance registerViaUi(
+            @FormParam("name") String name,
+            @FormParam("email") String email,
+            @FormParam("phoneNumber") String phoneNumber) {
+        LOG.info("UI: Registration attempt for email: " + email);
+        Member newMember = new Member();
+        newMember.name = name;
+        newMember.email = email;
+        newMember.phoneNumber = phoneNumber;
 
-        Member newMember = new Member(name, email, phoneNumber);
         Map<String, String> errors = new HashMap<>();
-        List<Map<String, String>> globalMessages =
-                new java.util.ArrayList<>(); // List of Maps for type/text
+        List<Map<String, String>> globalMessages = new ArrayList<>();
 
         try {
             validateMemberBean(newMember);
-            registration.register(newMember);
+            registrationService.register(newMember);
             globalMessages.add(Map.of("type", "valid", "text", "Registered!"));
-            List<Member> members = Member.findAll(Sort.by("name")).list();
-            return index.data("members", members)
-                    .data("newMember", new Member())
-                    .data("errors", Collections.emptyMap())
-                    .data("globalMessages", globalMessages);
+            newMember = new Member();
 
         } catch (ConstraintViolationException ce) {
             ce.getConstraintViolations()
@@ -192,11 +209,31 @@ public class MemberResourceRESTService {
                             "An unexpected error occurred during registration."));
         }
 
-        List<Member> members = Member.findAll(Sort.by("name")).list();
+        List<Member> members = memberRepository.listAll(Sort.by("name"));
         return index.data("members", members)
                 .data("newMember", newMember)
                 .data("errors", errors)
                 .data("globalMessages", globalMessages);
+    }
+
+    @GET
+    @Path("/ui/members/{id}")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getMemberByIdUi(@PathParam("id") Long id) {
+        LOG.info("UI: Looking up member by id: " + id);
+        Member member =
+                memberRepository
+                        .findByIdOptional(id)
+                        .orElseThrow(
+                                () ->
+                                        new WebApplicationException(
+                                                "Member with id of " + id + " does not exist.",
+                                                Response.Status.NOT_FOUND));
+        List<Member> membersList = (member != null) ? List.of(member) : Collections.emptyList();
+        return index.data("members", membersList)
+                .data("newMember", new Member())
+                .data("errors", Collections.emptyMap())
+                .data("globalMessages", Collections.emptyList());
     }
 
     private void validateMemberBean(Member member) throws ConstraintViolationException {
@@ -206,8 +243,7 @@ public class MemberResourceRESTService {
         }
     }
 
-    private Response.ResponseBuilder createViolationResponse(
-            Set<ConstraintViolation<?>> violations) {
+    private Response createViolationResponse(Set<ConstraintViolation<?>> violations) {
         LOG.warnf(
                 "Validation violations found: %s",
                 violations.stream()
@@ -218,6 +254,6 @@ public class MemberResourceRESTService {
         for (ConstraintViolation<?> violation : violations) {
             responseObj.put(violation.getPropertyPath().toString(), violation.getMessage());
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity(responseObj);
+        return Response.status(Response.Status.BAD_REQUEST).entity(responseObj).build();
     }
 }
