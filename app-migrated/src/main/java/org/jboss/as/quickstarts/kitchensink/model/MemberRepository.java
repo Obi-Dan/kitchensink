@@ -27,6 +27,14 @@ public class MemberRepository implements PanacheMongoRepositoryBase<Member, Long
         return Optional.ofNullable(find("email", email).firstResult());
     }
 
+    // Explicitly implement findByIdOptional to ensure correct querying for Long _id
+    public Optional<Member> findByIdOptional(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(find("id", id).firstResult()); // Panache should map field 'id' to '_id'
+    }
+
     // PanacheMongoRepositoryBase provides common methods like:
     // findByIdOptional(ID id)
     // listAll(Sort sort)
