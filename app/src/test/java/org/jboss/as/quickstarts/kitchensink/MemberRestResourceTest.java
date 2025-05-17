@@ -36,12 +36,12 @@ import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
 @QuarkusTest
 public class MemberRestResourceTest {
 
     @InjectMock MemberRepository memberRepository;
-
     @InjectMock MemberRegistration memberRegistration;
 
     private List<Member> membersList;
@@ -57,10 +57,6 @@ public class MemberRestResourceTest {
 
     private Member createMember(Long id, String name, String email, String phone) {
         Member member = new Member();
-        // Panache entities typically have ID assigned on persist,
-        // but for mocking repository responses, we might set it.
-        // Or, ensure the Member class allows setting ID if it's not auto-generated before persist.
-        // For now, let's assume we can set it for test data.
         member.id = id;
         member.name = name;
         member.email = email;
@@ -102,8 +98,7 @@ public class MemberRestResourceTest {
                 .then()
                 .log()
                 .all()
-                .statusCode(204); // Based on MemberResourceRESTService logic
-        // .body(equalTo("[]")); // And it returns an empty array string for NO_CONTENT
+                .statusCode(204);
     }
 
     @Test
@@ -151,17 +146,11 @@ public class MemberRestResourceTest {
         newMember.email = "test.user@example.com";
         newMember.phoneNumber = "1122334455";
 
-        // Mock successful registration
-        // The service will call validator.validate(member) first.
-        // For simplicity, assume validation passes. We'll test validation failure separately.
-        // The service then calls registrationService.register(member).
-        // The register method in MemberRegistration might modify the member (e.g., assign an ID).
-        // We need to simulate this if the response relies on it.
         org.mockito.Mockito.doAnswer(
                         invocation -> {
                             Member memberArg = invocation.getArgument(0);
-                            memberArg.id = 3L; // Simulate ID assignment
-                            return null; // void method
+                            memberArg.id = 3L;
+                            return null;
                         })
                 .when(memberRegistration)
                 .register(ArgumentMatchers.any(Member.class));
@@ -185,7 +174,7 @@ public class MemberRestResourceTest {
     @Test
     public void testCreateMemberApi_validationFailure_blankName() {
         Member newMember = new Member();
-        newMember.name = ""; // Blank name - should fail validation
+        newMember.name = "";
         newMember.email = "valid.email@example.com";
         newMember.phoneNumber = "1234567890";
 
@@ -199,20 +188,14 @@ public class MemberRestResourceTest {
                 .then()
                 .log()
                 .all()
-                .statusCode(400) // Bad Request due to validation
-                // Check for the specific validation error message for 'name'
-                // The actual error structure comes from createViolationResponse
-                .body(
-                        "name",
-                        equalTo("size must be between 1 and 25")); // Adjusted: @Size triggers for
-        // blank
-        // Member.name
+                .statusCode(400)
+                .body("name", equalTo("size must be between 1 and 25"));
     }
 
     @Test
     public void testCreateMemberApi_validationFailure_nameTooLong() {
         Member newMember = new Member();
-        newMember.name = "ThisNameIsDefinitelyWayTooLongForTheValidation"; // Exceeds 25 chars
+        newMember.name = "ThisNameIsDefinitelyWayTooLongForTheValidation";
         newMember.email = "valid.email@example.com";
         newMember.phoneNumber = "1234567890";
 
@@ -233,7 +216,7 @@ public class MemberRestResourceTest {
     @Test
     public void testCreateMemberApi_validationFailure_nameWithNumbers() {
         Member newMember = new Member();
-        newMember.name = "Name123"; // Contains numbers
+        newMember.name = "Name123";
         newMember.email = "valid.email@example.com";
         newMember.phoneNumber = "1234567890";
 
@@ -255,7 +238,7 @@ public class MemberRestResourceTest {
     public void testCreateMemberApi_validationFailure_nullEmail() {
         Member newMember = new Member();
         newMember.name = "Valid Name";
-        newMember.email = null; // Null email
+        newMember.email = null;
         newMember.phoneNumber = "1234567890";
 
         RestAssured.given()
@@ -276,7 +259,7 @@ public class MemberRestResourceTest {
     public void testCreateMemberApi_validationFailure_invalidEmailFormat() {
         Member newMember = new Member();
         newMember.name = "Valid Name";
-        newMember.email = "invalidemail"; // Invalid email format
+        newMember.email = "invalidemail";
         newMember.phoneNumber = "1234567890";
 
         RestAssured.given()
@@ -298,7 +281,7 @@ public class MemberRestResourceTest {
         Member newMember = new Member();
         newMember.name = "Valid Name";
         newMember.email = "valid.email@example.com";
-        newMember.phoneNumber = null; // Null phone number
+        newMember.phoneNumber = null;
 
         RestAssured.given()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -319,7 +302,7 @@ public class MemberRestResourceTest {
         Member newMember = new Member();
         newMember.name = "Valid Name";
         newMember.email = "valid.email@example.com";
-        newMember.phoneNumber = "12345"; // Too short
+        newMember.phoneNumber = "12345";
 
         RestAssured.given()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -340,7 +323,7 @@ public class MemberRestResourceTest {
         Member newMember = new Member();
         newMember.name = "Valid Name";
         newMember.email = "valid.email@example.com";
-        newMember.phoneNumber = "1234567890123"; // Too long
+        newMember.phoneNumber = "1234567890123";
 
         String phoneNumberError =
                 RestAssured.given()
@@ -370,7 +353,7 @@ public class MemberRestResourceTest {
         Member newMember = new Member();
         newMember.name = "Valid Name";
         newMember.email = "valid.email@example.com";
-        newMember.phoneNumber = "123-456-7890"; // Contains non-digits
+        newMember.phoneNumber = "123-456-7890";
 
         RestAssured.given()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -385,8 +368,7 @@ public class MemberRestResourceTest {
                 .statusCode(400)
                 .body(
                         "phoneNumber",
-                        equalTo(
-                                "numeric value out of bounds (<12 digits>.<0 digits> expected)")); // Adjusted: @Digits triggers
+                        equalTo("numeric value out of bounds (<12 digits>.<0 digits> expected)"));
     }
 
     @Test
@@ -396,7 +378,6 @@ public class MemberRestResourceTest {
         newMember.email = "existing.email@example.com";
         newMember.phoneNumber = "1122334455";
 
-        // Mock the registration service to throw EmailAlreadyExistsException
         org.mockito.Mockito.doThrow(
                         new MemberRegistration.EmailAlreadyExistsException("Email already exists"))
                 .when(memberRegistration)
@@ -412,14 +393,14 @@ public class MemberRestResourceTest {
                 .then()
                 .log()
                 .all()
-                .statusCode(409) // Conflict
+                .statusCode(409)
                 .body("email", equalTo("Email already exists"));
     }
 
     @Test
     public void testCreateMemberApi_conflict_idProvidedInRequest() {
         Member newMember = new Member();
-        newMember.id = 123L; // ID is provided, which is not allowed for creation
+        newMember.id = 123L;
         newMember.name = "Test User With ID";
         newMember.email = "id.provided@example.com";
         newMember.phoneNumber = "1122334455";
@@ -434,10 +415,156 @@ public class MemberRestResourceTest {
                 .then()
                 .log()
                 .all()
-                .statusCode(409) // Conflict
+                .statusCode(409)
                 .body(
                         "id",
                         equalTo(
                                 "ID must not be set for new member registration. It will be auto-generated."));
+    }
+
+    @Test
+    public void testCreateMemberApi_nullMember() {
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("null")
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body(equalTo("Member data is required."));
+    }
+
+    @Test
+    public void testCreateMemberApi_genericExceptionDuringRegistration() throws Exception {
+        Member newMember = new Member();
+        newMember.name = "Test User GenEx";
+        newMember.email = "test.genex@example.com";
+        newMember.phoneNumber = "1234567890";
+
+        org.mockito.Mockito.doThrow(new RuntimeException("Simulated generic error"))
+                .when(memberRegistration)
+                .register(ArgumentMatchers.any(Member.class));
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(500)
+                .body("error", equalTo("An unexpected error occurred: Simulated generic error"));
+    }
+
+    @Test
+    public void testGetWebUi_whenMembersExist() {
+        // Arrange
+        when(memberRepository.listAll(ArgumentMatchers.any(Sort.class))).thenReturn(membersList);
+
+        // Act & Assert HTTP Response
+        String htmlResponse =
+                RestAssured.given()
+                        .log()
+                        .all()
+                        .when()
+                        .get("/rest/app/ui") // Path to the UI endpoint
+                        .then()
+                        .log()
+                        .all()
+                        .statusCode(200)
+                        .contentType(MediaType.TEXT_HTML)
+                        .extract()
+                        .asString(); // Extract HTML for further optional assertions
+
+        // Verify interaction with the (mocked) repository
+        Mockito.verify(memberRepository).listAll(ArgumentMatchers.any(Sort.class));
+
+        // Optional: Assert that key data appears in the HTML
+        // This can be brittle if the HTML structure changes frequently.
+        assertTrue(htmlResponse.contains("John Doe"));
+        assertTrue(htmlResponse.contains("jane.doe@example.com"));
+    }
+
+    @Test
+    public void testGetWebUi_whenNoMembersExist() {
+        // Arrange
+        when(memberRepository.listAll(ArgumentMatchers.any(Sort.class)))
+                .thenReturn(Collections.emptyList());
+
+        // Act & Assert HTTP Response
+        String htmlResponse =
+                RestAssured.given()
+                        .log()
+                        .all()
+                        .when()
+                        .get("/rest/app/ui") // Path to the UI endpoint
+                        .then()
+                        .log()
+                        .all()
+                        .statusCode(200)
+                        .contentType(MediaType.TEXT_HTML)
+                        .extract()
+                        .asString();
+
+        // Verify interaction with the (mocked) repository
+        Mockito.verify(memberRepository).listAll(ArgumentMatchers.any(Sort.class));
+
+        // Optional: Assert that a message about no members is shown, or key elements are absent
+        // For example, check that the member table body is empty or a specific "no members" message
+        // is present.
+        // This depends on the actual HTML structure when no members are available.
+        // For now, we'll just check that common member data is NOT present.
+        assertTrue(!htmlResponse.contains("John Doe"));
+        assertTrue(!htmlResponse.contains("jane.doe@example.com"));
+        // Add more specific assertions based on how your template handles an empty list
+    }
+
+    @Test
+    public void testRegisterViaUi_genericException() throws Exception {
+        // Arrange
+        // Mock registrationService to throw a generic RuntimeException
+        Mockito.doThrow(new RuntimeException("Simulated generic UI error"))
+                .when(memberRegistration)
+                .register(ArgumentMatchers.any(Member.class));
+
+        // Mock repository to return an empty list for the subsequent page render
+        when(memberRepository.listAll(ArgumentMatchers.any(Sort.class)))
+                .thenReturn(Collections.emptyList());
+
+        // Act & Assert HTTP Response
+        String htmlResponse =
+                RestAssured.given()
+                        .formParam("name", "Error User")
+                        .formParam("email", "error.user@example.com")
+                        .formParam("phoneNumber", "0000000000")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .log()
+                        .all()
+                        .when()
+                        .post("/rest/app/ui/register")
+                        .then()
+                        .log()
+                        .all()
+                        .statusCode(200) // UI still renders, but with an error message
+                        .contentType(MediaType.TEXT_HTML)
+                        .extract()
+                        .asString();
+
+        // Verify that register was called
+        Mockito.verify(memberRegistration).register(ArgumentMatchers.any(Member.class));
+
+        // Verify that listAll was called for rendering the page again
+        Mockito.verify(memberRepository).listAll(ArgumentMatchers.any(Sort.class));
+
+        // Assert that the generic error message is present in the HTML
+        // This depends on how your template displays globalMessages of type "error"
+        assertTrue(htmlResponse.contains("An unexpected error occurred during registration."));
     }
 }
