@@ -25,16 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MemberRegistrationAcceptanceTest {
 
-    private static final String APP_ROOT_URL = System.getProperty("app.root.url", "http://localhost:8080");
-    private static final String API_BASE_PATH = "/rest/members"; // Target API path
+    // app.base.url from Makefile is http://localhost:8080/rest
+    private static final String APP_BASE_URL = System.getProperty("app.base.url", "http://localhost:8080/rest"); 
+    private static final String MEMBERS_API_SUBPATH = "/members"; // Sub-path for members API relative to APP_BASE_URL
 
     private static Random random = new Random();
 
     @BeforeAll
     public static void setup() {
-        RestAssured.baseURI = APP_ROOT_URL;
-        System.out.println("Acceptance Test Application Root URL: " + RestAssured.baseURI);
-        System.out.println("Target API Path for POSTs/GETs: " + API_BASE_PATH);
+        RestAssured.baseURI = APP_BASE_URL; // This is now e.g., http://localhost:8080/rest
+        System.out.println("Acceptance Test Base URL (RestAssured.baseURI): " + RestAssured.baseURI);
     }
 
     private String generateValidPhoneNumber() {
@@ -63,48 +63,50 @@ public class MemberRegistrationAcceptanceTest {
     }
 
     @Test
-    @Order(0)
-    public void testPingPostEndpoint() {
-        System.out.println("Testing POST /rest/members/ping");
-        given()
-            .when()
-                .post(API_BASE_PATH + "/ping")
-            .then()
-                .statusCode(200)
-                .contentType(ContentType.TEXT)
-                .body(equalTo("pong_post"));
-        System.out.println("POST /rest/members/ping test PASSED");
-    }
-
-    @Test
     @Order(-1) // Run even before ping
     public void testGreetingEndpoint() {
-        System.out.println("Testing GET /rest/hello");
+        System.out.println("Testing GET /hello (relative to " + RestAssured.baseURI + ")");
+        // GreetingResource is @Path("/hello"), so its path is /rest/hello
+        // If RestAssured.baseURI is /rest, then get("/hello") is correct.
         given()
             .when()
-                .get("/rest/hello") // UPDATED: Full path including /rest
+                .get("/hello") 
             .then()
                 .statusCode(200)
                 .contentType(ContentType.TEXT)
                 .body(equalTo("Hello from RESTEasy Reactive"));
-        System.out.println("GET /rest/hello test PASSED");
+        System.out.println("GET /hello test PASSED");
     }
 
     @Test
-    @Order(1)
+    @Order(0) 
+    public void testPingPostEndpoint() {
+        System.out.println("Testing POST " + MEMBERS_API_SUBPATH + "/ping (relative to " + RestAssured.baseURI + ")");
+        given()
+            .when()
+                .post(MEMBERS_API_SUBPATH + "/ping") // e.g. /rest/members/ping
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.TEXT)
+                .body(equalTo("pong_post"));
+        System.out.println("POST " + MEMBERS_API_SUBPATH + "/ping test PASSED");
+    }
+
+    @Test
+    @Order(1) 
     public void testSimplestPostEndpoint() {
-        System.out.println("Testing POST /rest/members/simplest");
+        System.out.println("Testing POST " + MEMBERS_API_SUBPATH + "/simplest (relative to " + RestAssured.baseURI + ")");
         String name = "SimplePostName";
         given()
-            .contentType(ContentType.TEXT) // Send as plain text
+            .contentType(ContentType.TEXT)
             .body(name)
         .when()
-            .post(API_BASE_PATH + "/simplest")
+            .post(MEMBERS_API_SUBPATH + "/simplest") // e.g. /rest/members/simplest
         .then()
             .statusCode(200)
             .contentType(ContentType.TEXT)
             .body(equalTo("Created minimal: " + name));
-        System.out.println("POST /rest/members/simplest test PASSED");
+        System.out.println("POST " + MEMBERS_API_SUBPATH + "/simplest test PASSED");
     }
 
     @Test
@@ -130,7 +132,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(newMemberPayload.toString())
         .when()
-            .post(API_BASE_PATH);
+            .post(MEMBERS_API_SUBPATH);
         
         System.out.println("POST Response Status: " + postResponse.getStatusCode());
         System.out.println("POST Response Body: " + postResponse.getBody().asString());
@@ -146,7 +148,7 @@ public class MemberRegistrationAcceptanceTest {
         Response getResponse = given()
             .accept(ContentType.JSON)
         .when()
-            .get(API_BASE_PATH)
+            .get(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
@@ -187,7 +189,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -208,7 +210,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -229,7 +231,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -250,7 +252,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -271,7 +273,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -295,7 +297,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(initialMemberPayload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(anyOf(is(200), is(201)));
 
@@ -312,7 +314,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(duplicateMemberPayload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(409)
             .contentType(ContentType.JSON)
@@ -335,7 +337,7 @@ public class MemberRegistrationAcceptanceTest {
             .accept(ContentType.JSON)
             .pathParam("id", memberIdStr)
         .when()
-            .get(API_BASE_PATH + "/{id}")
+            .get(MEMBERS_API_SUBPATH + "/{id}")
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
@@ -354,7 +356,7 @@ public class MemberRegistrationAcceptanceTest {
             .accept(ContentType.JSON)
             .pathParam("id", nonExistentId)
         .when()
-            .get(API_BASE_PATH + "/{id}")
+            .get(MEMBERS_API_SUBPATH + "/{id}")
         .then()
             .statusCode(404);
     }
@@ -390,14 +392,14 @@ public class MemberRegistrationAcceptanceTest {
             .add("phoneNumber", generateValidPhoneNumber()).build();
 
         // Ensure all registrations are successful (200 or 201)
-        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post(API_BASE_PATH).then().statusCode(anyOf(is(200), is(201)));
-        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post(API_BASE_PATH).then().statusCode(anyOf(is(200), is(201)));
-        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post(API_BASE_PATH).then().statusCode(anyOf(is(200), is(201)));
+        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post(MEMBERS_API_SUBPATH).then().statusCode(anyOf(is(200), is(201)));
+        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post(MEMBERS_API_SUBPATH).then().statusCode(anyOf(is(200), is(201)));
+        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post(MEMBERS_API_SUBPATH).then().statusCode(anyOf(is(200), is(201)));
 
         Response response = given()
             .accept(ContentType.JSON)
         .when()
-            .get(API_BASE_PATH)
+            .get(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
@@ -441,7 +443,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(memberPayload.toString())
         .when()
-            .post(API_BASE_PATH)
+            .post(MEMBERS_API_SUBPATH)
         .then()
             .statusCode(anyOf(is(200), is(201))) // Allow 200 for update, 201 for new
             .contentType(ContentType.JSON)
