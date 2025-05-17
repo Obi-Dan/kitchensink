@@ -25,16 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MemberRegistrationAcceptanceTest {
 
-    // Updated to use system property, defaulting for local runs if property not set.
-    private static final String DEFAULT_BASE_URL = "http://localhost:8080/rest/members";
-    private static final String BASE_URL = System.getProperty("app.base.url", DEFAULT_BASE_URL.substring(0, DEFAULT_BASE_URL.lastIndexOf('/'))) + "/members";
+    private static final String APP_ROOT_URL = System.getProperty("app.root.url", "http://localhost:8080");
+    private static final String API_BASE_PATH = "/rest/members"; // Target API path
 
     private static Random random = new Random();
 
     @BeforeAll
     public static void setup() {
-        RestAssured.baseURI = BASE_URL;
-        System.out.println("Acceptance Test Base URL: " + RestAssured.baseURI);
+        RestAssured.baseURI = APP_ROOT_URL;
+        System.out.println("Acceptance Test Application Root URL: " + RestAssured.baseURI);
+        System.out.println("Target API Path for POSTs/GETs: " + API_BASE_PATH);
     }
 
     private String generateValidPhoneNumber() {
@@ -85,7 +85,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(newMemberPayload.toString())
         .when()
-            .post();
+            .post(API_BASE_PATH);
         
         System.out.println("POST Response Status: " + postResponse.getStatusCode());
         System.out.println("POST Response Body: " + postResponse.getBody().asString());
@@ -101,7 +101,7 @@ public class MemberRegistrationAcceptanceTest {
         Response getResponse = given()
             .accept(ContentType.JSON)
         .when()
-            .get()
+            .get(API_BASE_PATH)
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
@@ -142,7 +142,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -163,7 +163,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -184,7 +184,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -205,7 +205,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -226,7 +226,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(payload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
@@ -250,7 +250,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(initialMemberPayload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(anyOf(is(200), is(201)));
 
@@ -267,7 +267,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(duplicateMemberPayload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(409)
             .contentType(ContentType.JSON)
@@ -288,9 +288,9 @@ public class MemberRegistrationAcceptanceTest {
 
         given()
             .accept(ContentType.JSON)
-            .pathParam("id", memberIdStr) // Path param is still a string
+            .pathParam("id", memberIdStr)
         .when()
-            .get("/{id}")
+            .get(API_BASE_PATH + "/{id}")
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
@@ -309,7 +309,7 @@ public class MemberRegistrationAcceptanceTest {
             .accept(ContentType.JSON)
             .pathParam("id", nonExistentId)
         .when()
-            .get("/{id}")
+            .get(API_BASE_PATH + "/{id}")
         .then()
             .statusCode(404);
     }
@@ -345,14 +345,14 @@ public class MemberRegistrationAcceptanceTest {
             .add("phoneNumber", generateValidPhoneNumber()).build();
 
         // Ensure all registrations are successful (200 or 201)
-        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
-        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
-        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
+        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post(API_BASE_PATH).then().statusCode(anyOf(is(200), is(201)));
+        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post(API_BASE_PATH).then().statusCode(anyOf(is(200), is(201)));
+        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post(API_BASE_PATH).then().statusCode(anyOf(is(200), is(201)));
 
         Response response = given()
             .accept(ContentType.JSON)
         .when()
-            .get()
+            .get(API_BASE_PATH)
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
@@ -396,7 +396,7 @@ public class MemberRegistrationAcceptanceTest {
             .contentType(ContentType.JSON)
             .body(memberPayload.toString())
         .when()
-            .post()
+            .post(API_BASE_PATH)
         .then()
             .statusCode(anyOf(is(200), is(201))) // Allow 200 for update, 201 for new
             .contentType(ContentType.JSON)
