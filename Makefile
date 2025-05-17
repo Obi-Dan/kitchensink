@@ -1,23 +1,26 @@
-.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir
+.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir purge-mongo-data start-clean
 
 # Default target
 help:
 	@echo "Kitchensink Application Makefile"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make build           - Build the Docker image for the application"
-	@echo "  make run             - Run the application (builds if not built yet)"
-	@echo "  make stop            - Stop the running application"
-	@echo "  make logs            - Show application logs"
-	@echo "  make clean           - Remove containers, volumes, and images for the application"
-	@echo "  make test            - Run application unit tests (includes style check)"
-	@echo "  make test-coverage   - Run application unit tests with code coverage (includes style check)"
-	@echo "  make test-report     - Open the application's coverage report in a browser"
-	@echo "  make acceptance-test - Start app, run acceptance tests, then stop app"
-	@echo "  make ui-test         - Start app, run UI acceptance tests (with video), then stop app"
-	@echo "  make test-all        - Run all tests (unit, coverage, acceptance, UI)"
-	@echo "  make open-video-dir  - Open the UI test video recording directory"
-	@echo "  make help            - Show this help message"
+	@echo "  make build                - Build the Docker image for the application"
+	@echo "  make run                  - Run the application (builds if not built yet)"
+	@echo "  make start                - Build and run the application"
+	@echo "  make stop                 - Stop the running application"
+	@echo "  make logs                 - Show application logs"
+	@echo "  make clean                - Remove containers, volumes, and images for the application"
+	@echo "  make purge-mongo-data     - Purge existing MongoDB data volume"
+	@echo "  make start-clean          - Purge MongoDB data and then start the application"
+	@echo "  make test                 - Run application unit tests (includes style check)"
+	@echo "  make test-coverage        - Run application unit tests with code coverage (includes style check)"
+	@echo "  make test-report          - Open the application's coverage report in a browser"
+	@echo "  make acceptance-test      - Start app, run acceptance tests, then stop app"
+	@echo "  make ui-test              - Start app, run UI acceptance tests (with video), then stop app"
+	@echo "  make test-all             - Run all tests (unit, coverage, acceptance, UI)"
+	@echo "  make open-video-dir       - Open the UI test video recording directory"
+	@echo "  make help                 - Show this help message"
 	@echo ""
 
 # Build the Docker image
@@ -52,6 +55,20 @@ clean: stop
 	@echo "Cleaning up Docker resources (docker-compose.yml in root)..."
 	docker-compose down -v --rmi local --remove-orphans
 	@echo "Cleanup complete."
+
+# Purge MongoDB data
+purge-mongo-data:
+	@echo "Stopping mongo service (if running)..."
+	docker-compose stop mongo || true
+	@echo "Removing mongo service container (if it exists)..."
+	docker-compose rm -f -s mongo || true
+	@echo "Purging MongoDB data volume ($(shell basename $(CURDIR))_mongodb_data)..."
+	docker volume rm $(shell basename $(CURDIR))_mongodb_data || echo "INFO: Volume $(shell basename $(CURDIR))_mongodb_data not found or already removed."
+	@echo "MongoDB data volume purge attempt finished."
+
+# Start application with a clean slate of data
+start-clean: purge-mongo-data start
+	@echo "Application started with a clean slate of MongoDB data."
 
 # Run unit tests for the main application
 test:
