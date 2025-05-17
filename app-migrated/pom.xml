@@ -39,7 +39,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId> <!-- For JAX-RS and JSON -->
+            <artifactId>quarkus-rest-jackson</artifactId> <!-- UPDATED from quarkus-resteasy-reactive-jackson -->
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-qute</artifactId> <!-- For serving Qute templates via JAX-RS -->
+            <artifactId>quarkus-rest-qute</artifactId> <!-- UPDATED from quarkus-resteasy-reactive-qute -->
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
