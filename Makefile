@@ -29,9 +29,13 @@ build:
 run:
 	@echo "Starting Kitchensink application (Dockerfile in app/, docker-compose.yml in root)..."
 	docker-compose up -d
-	@echo "Application will be available at http://localhost:8080/kitchensink"
+	@echo "Application will be available at http://localhost:8080/rest/app/ui"
 
-
+# Start the application
+start:
+	@echo "Starting Kitchensink application..."
+	$(MAKE) build
+	$(MAKE) run
 
 # Stop the application
 stop:
