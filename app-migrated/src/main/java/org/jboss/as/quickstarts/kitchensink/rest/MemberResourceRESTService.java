@@ -17,6 +17,7 @@
 package org.jboss.as.quickstarts.kitchensink.rest;
 
 import io.quarkus.panache.common.Sort;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -47,6 +48,7 @@ import org.jboss.logging.Logger;
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
 @Path("/members") // Class-level path for API methods, relative to /rest global prefix
+@ApplicationScoped
 public class MemberResourceRESTService {
 
     private static final Logger LOG = Logger.getLogger(MemberResourceRESTService.class);
@@ -54,9 +56,6 @@ public class MemberResourceRESTService {
     @Inject Validator validator;
     @Inject MemberRegistration registrationService;
     @Inject MemberRepository memberRepository;
-
-    // UI Injections & methods still commented out
-    // @Inject @Location("Member/index.html") Template index;
 
     @GET
     @Path("/ping") // Effective path: /rest/members/ping
@@ -68,13 +67,16 @@ public class MemberResourceRESTService {
 
     @POST
     @Path("/simplest") // Effective path: /rest/members/simplest
+    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
-    public Response createMemberApiMinimal() {
-        LOG.info("API: createMemberApiMinimal (no-param) at /rest/members/simplest");
-        return Response.ok("Created minimal: no-param").type(MediaType.TEXT_PLAIN).build();
+    public Response createMemberApiMinimal(String name) {
+        LOG.info(
+                "API: createMemberApiMinimal received name: "
+                        + name
+                        + " at /rest/members/simplest");
+        return Response.ok("Created minimal: " + name).type(MediaType.TEXT_PLAIN).build();
     }
 
-    // UNCOMMENT original API methods
     @GET
     @Path("") // Effective: /rest/members
     @Produces(MediaType.APPLICATION_JSON)
@@ -170,11 +172,6 @@ public class MemberResourceRESTService {
                     .build();
         }
     }
-
-    // UI Methods are still commented out
-    /*
-    ...
-    */
 
     private void validateMemberBean(Member member) throws ConstraintViolationException {
         Set<ConstraintViolation<Member>> violations = validator.validate(member);
