@@ -106,7 +106,7 @@ public class MemberResourceRESTService {
 
     @POST
     @Path("/rest/members")
-    @Consumes(MediaType.APPLICATION_JSON)
+    // @Consumes(MediaType.APPLICATION_JSON) // Temporarily comment out to test
     @Produces(MediaType.APPLICATION_JSON)
     public Response createMemberApi(Member member) {
         LOG.info(
