@@ -29,19 +29,10 @@ public class MemberRepository implements PanacheMongoRepositoryBase<Member, Long
 
     // Explicitly implement findByIdOptional to ensure correct querying for Long _id
     public Optional<Member> findByIdOptional(Long id) {
-        System.out.println(
-                "MemberRepository: Attempting to find by Long id: " + id); // Direct System.out
         if (id == null) {
-            System.out.println("MemberRepository: Received null ID, returning empty.");
             return Optional.empty();
         }
-        // Query against the actual MongoDB document field name "_id"
         Member member = find("_id", id).firstResult();
-        System.out.println(
-                "MemberRepository: find(\"_id\", "
-                        + id
-                        + ") returned: "
-                        + (member != null ? member.email : "null"));
         return Optional.ofNullable(member);
     }
 
