@@ -121,8 +121,8 @@ public class MemberRegistrationAcceptanceTest {
         assertNotNull(foundMember, "Newly created member with email '" + uniqueEmail + "' not found in GET /members response.");
         assertEquals(testName, foundMember.get("name"), "Name of retrieved member does not match.");
         assertEquals(testPhone, foundMember.get("phoneNumber"), "Phone number of retrieved member does not match.");
-        assertNotNull(foundMember.get("stringId"), "stringId of retrieved member should not be null.");
-        assertTrue(foundMember.get("stringId") instanceof String, "Member stringId should be a String.");
+        assertNotNull(foundMember.get("id"), "id of retrieved member should not be null.");
+        assertTrue(foundMember.get("id") instanceof Integer || foundMember.get("id") instanceof Long, "Member id should be an Integer or Long.");
 
         System.out.println("Successfully registered and verified member: " + foundMember);
     }
@@ -281,34 +281,20 @@ public class MemberRegistrationAcceptanceTest {
         String uniqueEmail = generateUniqueEmail();
         String testPhone = generateValidPhoneNumber();
 
-        JsonObject newMemberPayload = Json.createObjectBuilder()
-                .add("name", testName)
-                .add("email", uniqueEmail)
-                .add("phoneNumber", testPhone)
-                .build();
-
-        // Get the ID from the response of the POST request
-        String memberIdStr = given()
-            .contentType(ContentType.JSON)
-            .body(newMemberPayload.toString())
-        .when()
-            .post()
-        .then()
-            .statusCode(anyOf(is(200), is(201)))
-            .contentType(ContentType.JSON)
-            .extract().path("stringId"); // Extract stringId from response
-
+        // Use the helper to create a member and get its ID (as a string)
+        String memberIdStr = createMemberAndGetId(testName, uniqueEmail, testPhone);
         assertNotNull(memberIdStr, "Could not retrieve ID from POST response.");
+        Integer memberIdInt = Integer.parseInt(memberIdStr); // Convert to Integer for comparison
 
         given()
             .accept(ContentType.JSON)
-            .pathParam("id", memberIdStr)
+            .pathParam("id", memberIdStr) // Path param is still a string
         .when()
             .get("/{id}")
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
-            .body("stringId", equalTo(memberIdStr))
+            .body("id", equalTo(memberIdInt)) // Compare with Integer ID
             .body("name", equalTo(testName))
             .body("email", equalTo(uniqueEmail))
             .body("phoneNumber", equalTo(testPhone));
@@ -317,7 +303,7 @@ public class MemberRegistrationAcceptanceTest {
     @Test
     @Order(9)
     public void testRetrieveMemberById_NotFound() {
-        String nonExistentId = "507f1f77bcf86cd799439011"; // Valid ObjectId format
+        Long nonExistentId = 999999L; // A Long ID that is unlikely to exist
 
         given()
             .accept(ContentType.JSON)
@@ -397,5 +383,26 @@ public class MemberRegistrationAcceptanceTest {
         // and the previous version of this test verified specific indices. 
         // We assume if they are all present, they are in the correct order amongst themselves 
         // if retrieved from a globally sorted list.
+    }
+
+    // Helper method to create a member and return its ID as a String
+    private String createMemberAndGetId(String name, String email, String phoneNumber) {
+        JsonObject memberPayload = Json.createObjectBuilder()
+            .add("name", name)
+            .add("email", email)
+            .add("phoneNumber", phoneNumber).build();
+
+        Response response = given()
+            .contentType(ContentType.JSON)
+            .body(memberPayload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(anyOf(is(200), is(201))) // Allow 200 for update, 201 for new
+            .contentType(ContentType.JSON)
+            .body("id", greaterThanOrEqualTo(0)) // Expect integer ID >= 0
+            .extract().response();
+        
+        return JsonPath.from(response.asString()).getString("id");
     }
 }
