@@ -1,9 +1,9 @@
 services:
   app: # Migrated Application
     build:
-      context: ./app-migrated
+      context: ./app
       dockerfile: Dockerfile
-    container_name: kitchensink-app-migrated
+    container_name: kitchensink-app
     ports:
       - "8080:8080"
     networks:

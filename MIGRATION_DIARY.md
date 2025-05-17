@@ -11,8 +11,8 @@ This document chronicles the significant decisions, challenges, and resolutions 
 -   **Version Control**:
     -   **Decision**: A new feature branch, `feature/quarkus-migration`, was created.
     -   **Rationale**: To isolate migration efforts from the main development line. Commits were made at logical stages (though more frequent, phase-wise commits were adopted part-way through).
--   **Project Scaffolding (`app-migrated/`)**:
-    -   **Decision**: A new Maven project structure was created under `app-migrated/` for the Quarkus application.
+-   **Project Scaffolding (`app/`)**:
+    -   **Decision**: A new Maven project structure was created under `app/` for the Quarkus application.
     -   **Rationale**: To keep the migrated application separate from the original during the transition.
     -   **`pom.xml` Configuration**:
         -   JDK: `21`.
@@ -85,7 +85,7 @@ This document chronicles the significant decisions, challenges, and resolutions 
 ## Phase 4: UI Migration (JSF to Qute)
 
 -   **Template Creation**:
-    -   **Decision**: Replaced `index.xhtml` (JSF) and `default.xhtml` (Facelets template) with a single Qute template: `app-migrated/src/main/resources/templates/Member/index.html`.
+    -   **Decision**: Replaced `index.xhtml` (JSF) and `default.xhtml` (Facelets template) with a single Qute template: `app/src/main/resources/templates/Member/index.html`.
     -   **Rationale**: Qute is Quarkus's native templating engine. A single template simplifies the UI structure for this application.
 -   **Mapping JSF to Qute**:
     -   `<h:form>` -> `<form method="post" action="...">`. Action URL points to a new JAX-RS method.
@@ -108,7 +108,7 @@ This document chronicles the significant decisions, challenges, and resolutions 
 
 ## Phase 5: Configuration and Utilities
 
--   **`application.properties` (for `app-migrated/`)**:
+-   **`application.properties` (for `app/`)**:
     -   Application name/version.
     -   HTTP port: `8080`.
     -   JAX-RS base path: `quarkus.resteasy-reactive.path=/rest`.
@@ -118,7 +118,7 @@ This document chronicles the significant decisions, challenges, and resolutions 
 
 ## Phase 6: Build, Deployment, and Testing Infrastructure
 
--   **`app-migrated/Dockerfile`**:
+-   **`app/Dockerfile`**:
     -   **Decision**: Multi-stage Docker build.
         -   Stage 1 (Builder): `maven:3.9.6-eclipse-temurin-21 AS builder`. Copies `pom.xml`, runs `mvn dependency:go-offline`, copies `src/`, runs `mvn package -Dquarkus.package.type=uber-jar -DskipTests`.
         -   Stage 2 (Runtime): `eclipse-temurin:21-jre-jammy AS runtime`. Copies uber-jar from builder. `ENTRYPOINT ["java", "-Dquarkus.http.host=0.0.0.0", "-jar", "application.jar"]`.
@@ -126,7 +126,7 @@ This document chronicles the significant decisions, challenges, and resolutions 
     -   **Challenge**: Initial attempts with Quarkus native builder images (`ubi-quarkus-mandrel-builder-image`, `quarkus-distroless-image-jni`) led to various build or runtime issues, possibly due to environment complexities or image configurations. Switching to a simpler Maven builder + standard JRE runtime was more straightforward for this uber-jar scenario.
 -   **`docker-compose.yml` Updates**:
     -   `app` service:
-        -   Build context changed to `./app-migrated`.
+        -   Build context changed to `./app`.
         -   Healthcheck updated to `/rest/app/api/members` (a valid API endpoint in the migrated app).
         -   Environment variable `QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017/?replicaSet=rs0` added to connect to the `mongo` service.
         -   `depends_on: mongo` added.
@@ -138,48 +138,12 @@ This document chronicles the significant decisions, challenges, and resolutions 
     -   `ui-tests` service:
         -   `CMD` in `ui-acceptance-tests/Dockerfile` updated to pass `-Dapp.url=http://app:8080/rest/app/ui` to point to the migrated app's UI path within the Docker network.
 -   **`Makefile` Updates**:
-    -   `test`, `test-coverage`, `test-report`: Paths and commands updated to target `app-migrated/` and use Quarkus/Maven conventions (e.g., `mvn test -Pcoverage`).
+    -   `test`, `test-coverage`, `test-report`: Paths and commands updated to target `app/` and use Quarkus/Maven conventions (e.g., `mvn test -Pcoverage`).
     -   `acceptance-test`:
         -   Updated to build and run the `app` (migrated) and `mongo` services.
         -   Passes `-Dapp.base.url=http://localhost:8080/rest/app/api` to acceptance tests.
-        -   Added `touch` command to bust Docker cache for `app-migrated/src`.
+        -   Added `touch` command to bust Docker cache for `app/src`.
         -   Enhanced logging and temporary removal of `docker-compose down` for debugging.
     -   `ui-test`:
         -   Updated to build `app`, `ui-tests`, and `mongo` services.
-        -   Starts `app` and `mongo` services.
-        -   Waits for `app` service to be healthy using `docker-compose ps app | grep -q 'healthy'`.
-        -   Runs `docker-compose run --rm ui-tests`.
-        -   Added `touch` command for cache busting.
-        -   Enhanced failure logging.
-    -   `clean` target: Added `--remove-orphans` to `docker-compose down` for more thorough cleanup. Force removal of `mongo` container added to `acceptance-test` target before `up`.
-        -   **Challenge**: Persistent "container name already in use" for `kitchensink-mongo`. Resolved by more aggressive cleaning.
-
-## Phase 7: Testing and Validation (Iterative Debugging)
-
-This phase was intertwined with previous phases, especially build and UI.
-
--   **Acceptance Tests (`MemberRegistrationAcceptanceTest.java`)**:
-    -   `BASE_URL` updated to use a system property (`app.base.url`) defaulting to the migrated app's API base path (`http://localhost:8080/rest/app/api/members`).
-    -   ID handling: Adapted to expect String ObjectIds from the API.
-    -   POST status codes: Changed assertions to expect `200` or `201` for creation.
-    -   Validation message for phone number: Adjusted assertion for "numeric value out of bounds".
-    -   **Challenge**: Initial `Connection refused` errors due to Quarkus app not starting/connecting to MongoDB correctly. Resolved by configuring replica set (`?replicaSet=rs0` in connection string, `--replSet rs0` for MongoDB container, correct `rs.initiate` in healthcheck) and ensuring correct connection string in `docker-compose.yml` for the `app` service.
--   **UI Tests (`MemberRegistrationUITest.java`)**:
-    -   **Headless Mode**: Enabled in Playwright launch options.
-    -   **`appUrl`**: Updated to use `System.getProperty("app.url", ...)` and Docker CMD updated.
-    -   **Page Title Failures**:
-        -   **Issue**: `page.title()` consistently returned empty string.
-        -   **Resolution**: Added explicit `page.waitForLoadState(LoadState.DOMCONTENTLOADED)`, `page.waitForLoadState(LoadState.LOAD)`, and a `page.waitForFunction("() => document.title !== '' && document.title === 'kitchensink'")` in the `verifyPageTitle` helper.
-    -   **Locator Updates (Major Task)**:
-        -   **Issue**: Original tests used JSF-style IDs (e.g., `reg:name`). Qute templates use plain HTML IDs (e.g., `name`).
-        -   **Resolution**: All locators in `MemberRegistrationUITest.java` were updated from `id=reg:fieldName` / `label[for='reg:fieldName']` to `input#fieldName` / `label[for='fieldName']`. This was a pervasive change.
-    -   **Text Content Assertions**:
-        -   H1 text, aside paragraph text, footer text: Updated to match exact content from the Qute template (e.g., "Welcome to JBoss (Quarkus Edition)!", "...(and Quarkus!)", "...(migrated to Quarkus).").
-    -   **Error Message Handling**:
-        -   Empty error spans (e.g., for name with special characters): Changed assertions from `isHidden()` to `hasText("")`.
-        -   Duplicate email error regex: Updated to `(unique index|primary key violation|duplicate|already registered|email already exists)` to cover messages observed from the migrated app.
-    -   **REST Link Locators**: HREF attributes for member-specific and all-member REST links updated to `/rest/app/api/...`.
-    -   **Snapshot Debugging**: Enhanced `saveHtmlSnapshot` to print HTML snippets to console.
--   **Final Pass**: All tests in `make test-all` (unit, coverage, acceptance, UI) successfully passed after these iterations.
-
-This diary captures the iterative nature of the migration, especially the debugging cycles involved in making the build, services, and tests work together in the new Quarkus environment. 
+        -   Starts `app`

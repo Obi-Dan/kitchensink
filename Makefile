@@ -55,41 +55,39 @@ clean: stop
 
 # Run unit tests for the main application
 test:
-	@echo "Running application tests in app-migrated/ directory..."
-	(cd app-migrated && \
-		echo "Validating application code style (Quarkus)..." && \
-		mvn spotless:check && \
-		echo "Running application unit tests (Quarkus)..." && \
-		mvn test)
+	@echo "Running application tests in app/ directory..."
+	(cd app && \
+		$(MVN) clean test $(MAVEN_OPTS))
 
 # Run unit tests with code coverage for the main application
 test-coverage:
-	@echo "Running application tests with coverage in app-migrated/ directory..."
-	(cd app-migrated && \
-		echo "Validating application code style (Quarkus)..." && \
-		mvn spotless:check && \
-		echo "Running application unit tests with JaCoCo code coverage (Quarkus)..." && \
-		mvn test -Pcoverage)
+	@echo "Running application tests with coverage in app/ directory..."
+	(cd app && \
+		$(MVN) clean test -Pcoverage $(MAVEN_OPTS))
 
 # Open the coverage report in a browser (OS dependent)
-# Note: This now expects the report to be in app-migrated/target/
+# Note: This now expects the report to be in app/target/
+# (adjust if your Quarkus project structure differs)
 test-report:
-	@echo "Opening coverage report from app-migrated/target/site/jacoco/index.html..."
+	@echo "Opening coverage report from app/target/site/jacoco/index.html..."
 	@if [ "$(shell uname)" = "Darwin" ]; then \
-		open app-migrated/target/site/jacoco/index.html; \
+		open app/target/site/jacoco/index.html; \
 	elif [ "$(shell uname)" = "Linux" ]; then \
-		xdg-open app-migrated/target/site/jacoco/index.html; \
+		xdg-open app/target/site/jacoco/index.html; \
 	else \
-		echo "Please open app-migrated/target/site/jacoco/index.html in your browser"; \
+		echo "Please open app/target/site/jacoco/index.html in your browser"; \
 	fi
 
 # Run acceptance tests
 acceptance-test:
 	@echo "Starting MIGRATED application for acceptance tests (docker-compose.yml in root)..."
 	docker-compose rm -s -f mongo || true # Ensure mongo is gone, ignore error if not found
-	touch app-migrated/pom.xml # Bust cache for POM
-	touch app-migrated/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache for SRC
-	docker-compose build app mongo # Ensure migrated app and mongo are built
+	touch app/pom.xml # Bust cache for POM
+	touch app/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache for SRC
+	docker-compose build --no-cache \
+		--build-arg BUILDKIT_INLINE_CACHE=1 \
+		--build-arg MAVEN_ARGS="$(MAVEN_OPTS)" \
+		app mongo
 	docker-compose up -d app # This will also start mongo due to depends_on
 	@echo "Waiting for MIGRATED application to start (using healthcheck and additional sleep)..."
 	@sleep 20 # Increased sleep slightly more
@@ -108,9 +106,12 @@ ui-test:
 	@echo "Cleaning up old UI test videos..."
 	rm -rf ui-acceptance-tests/target/videos/*
 	@echo "Building services if necessary (docker-compose.yml in root)..."
-	touch app-migrated/pom.xml # Bust cache for POM
-	touch app-migrated/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache for SRC
-	docker-compose build app ui-tests mongo # build all three
+	touch app/pom.xml # Bust cache for POM
+	touch app/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache for SRC
+	docker-compose build --no-cache \
+		--build-arg BUILDKIT_INLINE_CACHE=1 \
+		--build-arg MAVEN_ARGS="$(MAVEN_OPTS)" \
+		app ui-tests mongo
 	@echo "Starting application services for UI acceptance tests (docker-compose.yml in root)..."
 	docker-compose up -d app mongo # Start app and mongo
 	@echo "Waiting for app service to be healthy (UI tests depend on app)..."
