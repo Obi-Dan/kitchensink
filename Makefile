@@ -1,5 +1,9 @@
 .PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir purge-mongo-data start-clean
 
+# Variables
+MVN := mvn
+MAVEN_OPTS := $(MAVEN_OPTS)
+
 # Default target
 help:
 	@echo "Kitchensink Application Makefile"
@@ -78,21 +82,25 @@ test:
 
 # Run unit tests with code coverage for the main application
 test-coverage:
-	@echo "Running application tests with coverage in app/ directory..."
+	@echo "Running application tests with coverage in app/ directory (using quarkus-jacoco extension)..."
 	(cd app && \
-		$(MVN) clean test -Pcoverage $(MAVEN_OPTS))
+		$(MVN) clean verify $(MAVEN_OPTS))
 
 # Open the coverage report in a browser (OS dependent)
-# Note: This now expects the report to be in app/target/
-# (adjust if your Quarkus project structure differs)
-test-report:
-	@echo "Opening coverage report from app/target/site/jacoco/index.html..."
-	@if [ "$(shell uname)" = "Darwin" ]; then \
-		open app/target/site/jacoco/index.html; \
-	elif [ "$(shell uname)" = "Linux" ]; then \
-		xdg-open app/target/site/jacoco/index.html; \
+# Note: This now expects the report to be in app/target/jacoco-report/
+test-report: test-coverage
+	@echo "Attempting to open coverage report from app/target/jacoco-report/index.html..."
+	@if [ -f app/target/jacoco-report/index.html ]; then \
+		if [ "$(shell uname)" = "Darwin" ]; then \
+			open app/target/jacoco-report/index.html; \
+		elif [ "$(shell uname)" = "Linux" ]; then \
+			xdg-open app/target/jacoco-report/index.html; \
+		else \
+			echo "Coverage report is available at app/target/jacoco-report/index.html. Please open it in your browser."; \
+		fi; \
 	else \
-		echo "Please open app/target/site/jacoco/index.html in your browser"; \
+		echo "ERROR: Coverage report not found at app/target/jacoco-report/index.html. Ensure 'make test-coverage' completed successfully."; \
+		false; \
 	fi
 
 # Run acceptance tests
