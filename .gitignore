@@ -25,6 +25,3 @@ target/
 # OS specific files
 .DS_Store
 Thumbs.db
-
-# Legacy code archive
-legacy_original_code/ 
