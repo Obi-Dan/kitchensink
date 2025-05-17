@@ -66,21 +66,18 @@ public class MemberResourceRESTService {
     @POST
     @Path("/members/ping") // Effective: /rest/members/ping
     @Produces(MediaType.TEXT_PLAIN)
-    public String pingPost() {
+    public Response pingPost() {
         LOG.info("API: Ping POST received at /rest/members/ping!");
-        return "pong_post";
+        return Response.ok("pong_post").type(MediaType.TEXT_PLAIN).build();
     }
 
     @POST
     @Path("/members/simplest") // Effective: /rest/members/simplest
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
-    public String createMemberApiMinimal(String name) {
-        LOG.info(
-                "API: createMemberApiMinimal received name: "
-                        + name
-                        + " at /rest/members/simplest");
-        return "Created minimal: " + name;
+    public Response createMemberApiMinimal(String name) {
+        LOG.info("API: createMemberApiMinimal received name: " + name + " at /rest/members/simplest");
+        return Response.ok("Created minimal: " + name).type(MediaType.TEXT_PLAIN).build();
     }
 
     @GET
