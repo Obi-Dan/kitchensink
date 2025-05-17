@@ -61,9 +61,9 @@ public class MemberResourceRESTService {
     @GET
     @Path("/ping") // Effective path: /rest/members/ping
     @Produces(MediaType.TEXT_PLAIN)
-    public String pingGet() { // Return String directly
-        LOG.info("API: Ping GET received at /rest/members/ping! (simple return)");
-        return "pong_get_direct";
+    public Response pingGet() {
+        LOG.info("API: Ping GET received at /rest/members/ping!");
+        return Response.ok("pong_get_direct").type(MediaType.TEXT_PLAIN).build();
     }
 
     @POST
@@ -78,7 +78,7 @@ public class MemberResourceRESTService {
         return Response.ok("Created minimal: " + name).type(MediaType.TEXT_PLAIN).build();
     }
 
-    // Restore original API methods
+    // UNCOMMENT original API methods
     @GET
     @Path("") // Effective: /rest/members
     @Produces(MediaType.APPLICATION_JSON)
