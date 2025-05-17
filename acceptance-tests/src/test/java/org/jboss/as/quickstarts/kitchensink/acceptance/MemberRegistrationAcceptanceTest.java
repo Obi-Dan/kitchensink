@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class MemberRegistrationAcceptanceTest {
 
     // Updated to use system property, defaulting for local runs if property not set.
-    private static final String DEFAULT_BASE_URL = "http://localhost:8080/rest/app/api/members";
+    private static final String DEFAULT_BASE_URL = "http://localhost:8080/rest/members";
     private static final String BASE_URL = System.getProperty("app.base.url", DEFAULT_BASE_URL.substring(0, DEFAULT_BASE_URL.lastIndexOf('/'))) + "/members";
 
     private static Random random = new Random();

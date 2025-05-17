@@ -16,11 +16,10 @@
                 <p>You have successfully deployed a Quarkus Enterprise Application.</p>
             </div>
 
-            <form id="reg" method="post" action="/rest/app/ui/register"> <!--# action will point to a JAX-RS endpoint #-->
+            <form id="reg" method="post" action="/kitchensink/register">
                 <h2>Member Registration</h2>
                 <p>Enforces annotation-based constraints defined on the model class.</p>
                 
-                <!--# Display global messages if any #-->
                 {#if globalMessages}
                     <ul class="messages">
                         {#for message in globalMessages}
@@ -29,7 +28,7 @@
                     </ul>
                 {/if}
 
-                <table> <!--# Using table for layout similar to original h:panelGrid #-->
+                <table>
                     <tbody>
                         <tr>
                             <td class="titleCell"><label for="name">Name:</label></td>
@@ -54,7 +53,7 @@
                         <tbody>
                             <tr>
                                 <td><input id="register" type="submit" value="Register" class="register"/></td>
-                                <td></td> <!--# Placeholder for messages that were next to button, now handled globally above #-->
+                                <td></td
                             </tr>
                         </tbody>
                     </table>
@@ -62,7 +61,7 @@
             </form>
 
             <h2>Members</h2>
-            {#if members} <!-- If members list is not null and not empty -->
+            {#if members}
                 <table class="simpletablestyle">
                     <thead>
                         <tr>
@@ -76,21 +75,21 @@
                     <tbody>
                         {#for member in members}
                         <tr>
-                            <td>{member.id}</td> <!--# Assuming Member has getStringId() or id.toString() #-->
+                            <td>{member.id}</td
                             <td>{member.name}</td>
                             <td>{member.email}</td>
                             <td>{member.phoneNumber}</td>
-                            <td><a href="/rest/app/api/members/{member.id}">/rest/app/api/members/{member.id}</a></td>
+                            <td><a href="/rest/members/{member.id}">/rest/members/{member.id}</a></td>
                         </tr>
                         {/for}
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="5">REST URL for all members: <a href="/rest/app/api/members">/rest/app/api/members</a></td>
+                            <td colspan="5">REST URL for all members: <a href="/rest/members">/rest/members</a></td>
                         </tr>
                     </tfoot>
                 </table>
-            {#else} <!-- If members list IS empty (or null) -->
+            {#else}
                 <em>No registered members.</em>
             {/if}
         </div>

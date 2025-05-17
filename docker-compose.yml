@@ -18,9 +18,9 @@ services:
       mongo: # Depends on the mongo service
         condition: service_healthy # Or service_started if mongo image doesn't have a good healthcheck
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/app/api/members"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/members"]
       interval: 30s
-      timeout: 10s
+      timeout: 20s
       retries: 5
       start_period: 60s
     restart: unless-stopped

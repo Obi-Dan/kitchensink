@@ -53,7 +53,6 @@ import org.jboss.logging.Logger;
  *
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
-@Path("/app")
 @ApplicationScoped
 public class MemberResourceRESTService {
 
@@ -70,7 +69,7 @@ public class MemberResourceRESTService {
     Template index;
 
     @GET
-    @Path("/api/members")
+    @Path("/rest/members")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAllMembersApi() {
         LOG.info("API: Listing all members (ordered by name)");
@@ -83,7 +82,7 @@ public class MemberResourceRESTService {
     }
 
     @GET
-    @Path("/api/members/{id}")
+    @Path("/rest/members/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response lookupMemberByIdApi(@PathParam("id") Long id) {
         LOG.info("API: Looking up member by id: " + id);
@@ -100,7 +99,7 @@ public class MemberResourceRESTService {
     }
 
     @POST
-    @Path("/api/members")
+    @Path("/rest/members")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createMemberApi(Member member) {
@@ -159,7 +158,7 @@ public class MemberResourceRESTService {
     }
 
     @GET
-    @Path("/ui")
+    @Path("/kitchensink")
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getWebUi() {
         LOG.info("Serving UI page");
@@ -172,7 +171,7 @@ public class MemberResourceRESTService {
     }
 
     @POST
-    @Path("/ui/register")
+    @Path("/kitchensink/register")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance registerViaUi(
@@ -220,7 +219,7 @@ public class MemberResourceRESTService {
     }
 
     @GET
-    @Path("/ui/members/{id}")
+    @Path("/kitchensink/members/{id}")
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getMemberByIdUi(@PathParam("id") Long id) {
         LOG.info("UI: Looking up member by id: " + id);

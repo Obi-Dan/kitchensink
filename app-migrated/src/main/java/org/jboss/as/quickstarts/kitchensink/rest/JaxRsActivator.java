@@ -28,7 +28,7 @@ import jakarta.ws.rs.core.Application;
  * <p>Resources are served relative to the servlet path specified in the {@link ApplicationPath}
  * annotation.
  */
-@ApplicationPath("/rest")
+@ApplicationPath("/")
 public class JaxRsActivator extends Application {
     /* class body intentionally left blank */
 }

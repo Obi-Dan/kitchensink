@@ -27,11 +27,9 @@ build:
 
 # Run the application
 run:
-	@echo "Starting Kitchensink application (Dockerfile in app/, docker-compose.yml in root)..."
+	@echo "Starting Kitchensink application (docker-compose.yml in root)..."
 	docker-compose up -d
 	@echo "Application will be available at http://localhost:8080/kitchensink"
-
-
 
 # Stop the application
 stop:
@@ -92,7 +90,7 @@ acceptance-test:
 	@echo "Initial logs from app container:"
 	docker-compose logs --tail="100" app
 	@echo "Running acceptance tests from acceptance-tests/ directory (against migrated app)..."
-	@(cd acceptance-tests && mvn test -Dapp.base.url=http://localhost:8080/rest/app/api) || \
+	@(cd acceptance-tests && mvn test -Dapp.base.url=http://localhost:8080/rest) || \
 		(echo "Acceptance tests FAILED. Displaying app logs:" && docker-compose logs --tail="500" app && docker-compose down -v && exit 1)
 	@echo "Acceptance tests PASSED."
 	@echo "Stopping application after acceptance tests (docker-compose.yml in root)..."

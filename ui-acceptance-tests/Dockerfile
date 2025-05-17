@@ -24,4 +24,4 @@ COPY ./ui-acceptance-tests/src ./src
 
 # Default command to execute when the container starts (can be overridden)
 # This will run all tests using Maven
-CMD ["mvn", "test", "-Dapp.url=http://app:8080/rest/app/ui"] 
+CMD ["mvn", "test", "-Dapp.url=http://app:8080/kitchensink/"] 
