@@ -83,7 +83,8 @@ test-report:
 acceptance-test:
 	@echo "Starting MIGRATED application for acceptance tests (docker-compose.yml in root)..."
 	docker-compose rm -s -f mongo || true # Ensure mongo is gone, ignore error if not found
-	touch app-migrated/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache
+	touch app-migrated/pom.xml # Bust cache for POM
+	touch app-migrated/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache for SRC
 	docker-compose build app mongo # Ensure migrated app and mongo are built
 	docker-compose up -d app # This will also start mongo due to depends_on
 	@echo "Waiting for MIGRATED application to start (using healthcheck and additional sleep)..."
@@ -103,7 +104,8 @@ ui-test:
 	@echo "Cleaning up old UI test videos..."
 	rm -rf ui-acceptance-tests/target/videos/*
 	@echo "Building services if necessary (docker-compose.yml in root)..."
-	touch app-migrated/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache
+	touch app-migrated/pom.xml # Bust cache for POM
+	touch app-migrated/src/main/java/org/jboss/as/quickstarts/kitchensink/model/Member.java # Bust cache for SRC
 	docker-compose build app ui-tests mongo # build all three
 	@echo "Starting application services for UI acceptance tests (docker-compose.yml in root)..."
 	docker-compose up -d app mongo # Start app and mongo
