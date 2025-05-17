@@ -59,11 +59,11 @@ public class MemberResourceRESTService {
     // @Inject @Location("Member/index.html") Template index;
 
     @GET
-    @Path("/ping") // Effective path: /rest/members/ping. This is the modified ping test method.
+    @Path("/ping") // Effective path: /rest/members/ping
     @Produces(MediaType.TEXT_PLAIN)
-    public Response pingGet() { // Renamed from pingPost to pingGet
-        LOG.info("API: Ping GET received at /rest/members/ping!");
-        return Response.ok("pong_get").type(MediaType.TEXT_PLAIN).build();
+    public String pingGet() { // Return String directly
+        LOG.info("API: Ping GET received at /rest/members/ping! (simple return)");
+        return "pong_get_direct";
     }
 
     @POST

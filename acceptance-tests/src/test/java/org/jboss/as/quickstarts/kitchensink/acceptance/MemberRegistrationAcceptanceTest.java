@@ -88,7 +88,7 @@ public class MemberRegistrationAcceptanceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.TEXT)
-                .body(equalTo("pong_get"));
+                .body(equalTo("pong_get_direct"));
         System.out.println("GET " + MEMBERS_API_SUBPATH + "/ping test PASSED");
     }
 
