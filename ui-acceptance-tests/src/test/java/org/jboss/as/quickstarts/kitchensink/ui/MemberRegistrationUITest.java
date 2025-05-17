@@ -293,7 +293,7 @@ public class MemberRegistrationUITest {
         assertThat(newMemberRow.locator("td").filter(new Locator.FilterOptions().setHasText(testEmail))).isVisible();
 
         // Verify the REST link for the newly registered member
-        Locator memberRestLink = newMemberRow.locator("a[href*='/rest/members/']");
+        Locator memberRestLink = newMemberRow.locator("a[href*='/rest/app/api/members/']");
         assertThat(memberRestLink).isVisible();
         String memberRestHref = memberRestLink.getAttribute("href");
         
@@ -393,8 +393,8 @@ public class MemberRegistrationUITest {
         verifyKitchensinkMainPageStructure(page); // Ensure page is loaded
 
         // This link is in the footer of the h:dataTable
-        Locator allMembersRestLink = page.locator("table.simpletablestyle tfoot a[href*='/rest/members']")
-                                       .filter(new Locator.FilterOptions().setHasText("/rest/members"));
+        Locator allMembersRestLink = page.locator("table.simpletablestyle tfoot a[href='/rest/app/api/members']")
+                                       .filter(new Locator.FilterOptions().setHasText("/rest/app/api/members"));
         assertThat(allMembersRestLink).isVisible();
         
         Page restPage = context.newPage(); // Open in a new page/tab
@@ -453,7 +453,7 @@ public class MemberRegistrationUITest {
         Locator globalDuplicateError = page.locator("ul.messages li.invalid");
 
         assertThat(globalDuplicateError).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(7000));
-        assertThat(globalDuplicateError).hasText(Pattern.compile("(Unique index|primary key violation|duplicate)", Pattern.CASE_INSENSITIVE));
+        assertThat(globalDuplicateError).hasText(Pattern.compile("(unique index|primary key violation|duplicate|already registered|email already exists)", Pattern.CASE_INSENSITIVE));
 
         // Verify the second user was NOT added to the table
         assertThat(page.locator("table.simpletablestyle").locator("tr").filter(new Locator.FilterOptions().setHasText(uniqueName2))).isHidden();
@@ -517,7 +517,7 @@ public class MemberRegistrationUITest {
         saveHtmlSnapshot(page, "testNameValidation", "04_name_with_special_chars");
 
         // Verify that NO field-specific error message appears for the name
-        assertThat(nameErrorMessage).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(5000));
+        assertThat(nameErrorMessage).hasText("", new LocatorAssertions.HasTextOptions().setUseInnerText(true).setTimeout(5000));
         
         // Verify user IS ADDED to the table as the name was accepted
         assertThat(page.locator("table.simpletablestyle").locator("tr").filter(new Locator.FilterOptions().setHasText(specialCharsEmail))).isVisible();
@@ -815,7 +815,7 @@ public class MemberRegistrationUITest {
         assertThat(row.locator("td").nth(3)).hasText(expectedPhone); // Phone
         
         // Verify REST link for this member (REQ-2.1.10)
-        assertThat(row.locator("td").nth(4).locator("a[href*='/rest/members/']")).isVisible();
+        assertThat(row.locator("td").nth(4).locator("a[href*='/rest/app/api/members/']")).isVisible();
     }
 
     @Test
@@ -953,7 +953,7 @@ public class MemberRegistrationUITest {
         // 1. Verify no field-specific error message for the email field
         Locator emailMessageCell = emailInput.locator("xpath=../following-sibling::td[1]");
         Locator emailErrorMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
-        assertThat(emailErrorMessage).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(3000)); // Should not be an error
+        assertThat(emailErrorMessage).hasText("", new LocatorAssertions.HasTextOptions().setUseInnerText(true).setTimeout(3000)); // Assert empty text
 
         // 2. Verify global success message (if applicable and consistent)
         // Using the same success message check as in testRegisterNewMember
