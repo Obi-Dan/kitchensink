@@ -20,7 +20,6 @@ import io.quarkus.panache.common.Sort; // For sorting
 // import io.quarkus.qute.Location; // Qute still commented out
 // import io.quarkus.qute.Template; // Qute still commented out
 // import io.quarkus.qute.TemplateInstance; // Qute still commented out
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -53,8 +52,7 @@ import org.jboss.logging.Logger;
  *
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
-// @Path("/") // REMOVED CLASS-LEVEL PATH
-@ApplicationScoped
+@Path("/")
 public class MemberResourceRESTService {
 
     private static final Logger LOG = Logger.getLogger(MemberResourceRESTService.class);
