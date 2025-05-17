@@ -53,7 +53,7 @@ import org.jboss.logging.Logger;
  *
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
-@Path("/") // Class-level path, method paths are relative to this + /rest global prefix
+// @Path("/") // REMOVED CLASS-LEVEL PATH
 @ApplicationScoped
 public class MemberResourceRESTService {
 
