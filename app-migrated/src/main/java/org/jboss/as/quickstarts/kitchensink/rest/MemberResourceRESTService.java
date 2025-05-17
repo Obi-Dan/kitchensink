@@ -68,14 +68,10 @@ public class MemberResourceRESTService {
 
     @POST
     @Path("/simplest") // Effective path: /rest/members/simplest
-    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
-    public Response createMemberApiMinimal(String name) {
-        LOG.info(
-                "API: createMemberApiMinimal received name: "
-                        + name
-                        + " at /rest/members/simplest");
-        return Response.ok("Created minimal: " + name).type(MediaType.TEXT_PLAIN).build();
+    public Response createMemberApiMinimal() {
+        LOG.info("API: createMemberApiMinimal (no-param) at /rest/members/simplest");
+        return Response.ok("Created minimal: no-param").type(MediaType.TEXT_PLAIN).build();
     }
 
     // UNCOMMENT original API methods

@@ -95,18 +95,15 @@ public class MemberRegistrationAcceptanceTest {
     @Test
     @Order(1) 
     public void testSimplestPostEndpoint() {
-        System.out.println("Testing POST " + MEMBERS_API_SUBPATH + "/simplest (relative to " + RestAssured.baseURI + ")");
-        String name = "SimplePostName";
+        System.out.println("Testing POST " + MEMBERS_API_SUBPATH + "/simplest (no-param) (relative to " + RestAssured.baseURI + ")");
         given()
-            .contentType(ContentType.TEXT)
-            .body(name)
         .when()
-            .post(MEMBERS_API_SUBPATH + "/simplest") // e.g. /rest/members/simplest
+            .post(MEMBERS_API_SUBPATH + "/simplest") 
         .then()
             .statusCode(200)
             .contentType(ContentType.TEXT)
-            .body(equalTo("Created minimal: " + name));
-        System.out.println("POST " + MEMBERS_API_SUBPATH + "/simplest test PASSED");
+            .body(equalTo("Created minimal: no-param"));
+        System.out.println("POST " + MEMBERS_API_SUBPATH + "/simplest (no-param) test PASSED");
     }
 
     @Test
