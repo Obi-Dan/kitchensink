@@ -16,180 +16,428 @@
  */
 package org.jboss.as.quickstarts.kitchensink;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
-import jakarta.validation.executable.ExecutableValidator;
-import jakarta.validation.metadata.BeanDescriptor;
-import java.lang.reflect.Field;
+import io.quarkus.panache.common.Sort;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
+import io.restassured.RestAssured;
+import jakarta.ws.rs.core.MediaType;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
-import org.jboss.as.quickstarts.kitchensink.data.MemberRepository;
+import java.util.Optional;
 import org.jboss.as.quickstarts.kitchensink.model.Member;
-import org.jboss.as.quickstarts.kitchensink.rest.MemberResourceRESTService;
+import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
 import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 
-/** Simple happy path test for MemberResourceRESTService */
+@QuarkusTest
 public class MemberRestResourceTest {
 
-    private MemberResourceRESTService restService;
-    private TestMemberRepository repository;
-    private TestMemberRegistration registration;
-    private TestValidator validator;
-    private List<Member> members;
+    @InjectMock MemberRepository memberRepository;
 
-    @Before
-    public void setup() throws Exception {
-        // Create the REST service
-        restService = new MemberResourceRESTService();
+    @InjectMock MemberRegistration memberRegistration;
 
-        // Create test data
-        members = new ArrayList<>();
-        members.add(createMember(1L, "John Doe", "john@example.com", "1234567890"));
-        members.add(createMember(2L, "Jane Doe", "jane@example.com", "0987654321"));
+    private List<Member> membersList;
 
-        // Create test dependencies
-        repository = new TestMemberRepository();
-        repository.setMembers(members);
-        registration = new TestMemberRegistration();
-        validator = new TestValidator();
-
-        // Inject dependencies via reflection
-        injectDependency(restService, "repository", repository);
-        injectDependency(restService, "registration", registration);
-        injectDependency(restService, "validator", validator);
-        injectDependency(
-                restService, "log", Logger.getLogger(MemberResourceRESTService.class.getName()));
+    @BeforeEach
+    public void setup() {
+        System.out.println(
+                "Setting up MemberRestResourceTest. MemberRepository mock: " + memberRepository);
+        membersList = new ArrayList<>();
+        membersList.add(createMember(0L, "John Doe", "john.doe@example.com", "1234567890"));
+        membersList.add(createMember(1L, "Jane Doe", "jane.doe@example.com", "0987654321"));
     }
 
-    @Test
-    public void testListAllMembers() {
-        // Call the REST method
-        List<Member> returnedMembers = restService.listAllMembers();
-
-        // Verify the result
-        assertNotNull(returnedMembers);
-        assertEquals(2, returnedMembers.size());
-        assertEquals("John Doe", returnedMembers.get(0).getName());
-        assertEquals("jane@example.com", returnedMembers.get(1).getEmail());
-    }
-
-    @Test
-    public void testLookupMemberById() {
-        // Call the REST method
-        Member member = restService.lookupMemberById(1L);
-
-        // Verify the result
-        assertNotNull(member);
-        assertEquals("John Doe", member.getName());
-        assertEquals("john@example.com", member.getEmail());
-    }
-
-    // Helper method to inject dependencies using reflection
-    private void injectDependency(Object target, String fieldName, Object dependency)
-            throws Exception {
-        Field field = MemberResourceRESTService.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, dependency);
-    }
-
-    // Helper method to create a test member
     private Member createMember(Long id, String name, String email, String phone) {
         Member member = new Member();
-        member.setId(id);
-        member.setName(name);
-        member.setEmail(email);
-        member.setPhoneNumber(phone);
+        // Panache entities typically have ID assigned on persist,
+        // but for mocking repository responses, we might set it.
+        // Or, ensure the Member class allows setting ID if it's not auto-generated before persist.
+        // For now, let's assume we can set it for test data.
+        member.id = id;
+        member.name = name;
+        member.email = email;
+        member.phoneNumber = phone;
         return member;
     }
 
-    // Test implementation of MemberRepository
-    private static class TestMemberRepository extends MemberRepository {
-        private List<Member> members = new ArrayList<>();
+    @Test
+    public void testGetAllMembersApi_whenMembersExist() {
+        when(memberRepository.listAll(ArgumentMatchers.any(Sort.class))).thenReturn(membersList);
 
-        public void setMembers(List<Member> members) {
-            this.members = members;
-        }
-
-        @Override
-        public List<Member> findAllOrderedByName() {
-            return members;
-        }
-
-        @Override
-        public Member findById(Long id) {
-            for (Member member : members) {
-                if (id.equals(member.getId())) {
-                    return member;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public Member findByEmail(String email) {
-            for (Member member : members) {
-                if (email.equals(member.getEmail())) {
-                    return member;
-                }
-            }
-            throw new jakarta.persistence.NoResultException("Email not found: " + email);
-        }
+        RestAssured.given()
+                .log()
+                .all()
+                .when()
+                .get("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("$", hasSize(2))
+                .body("[0].name", equalTo("John Doe"))
+                .body("[0].email", equalTo("john.doe@example.com"))
+                .body("[1].name", equalTo("Jane Doe"))
+                .body("[1].email", equalTo("jane.doe@example.com"));
     }
 
-    // Test implementation of MemberRegistration
-    private static class TestMemberRegistration extends MemberRegistration {
-        private Member lastRegisteredMember;
+    @Test
+    public void testGetAllMembersApi_whenNoMembersExist() {
+        when(memberRepository.listAll(ArgumentMatchers.any(Sort.class)))
+                .thenReturn(Collections.emptyList());
 
-        @Override
-        public void register(Member member) throws Exception {
-            this.lastRegisteredMember = member;
-        }
-
-        public Member getLastRegisteredMember() {
-            return lastRegisteredMember;
-        }
+        RestAssured.given()
+                .log()
+                .all()
+                .when()
+                .get("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(204); // Based on MemberResourceRESTService logic
+        // .body(equalTo("[]")); // And it returns an empty array string for NO_CONTENT
     }
 
-    // Test implementation of Validator
-    private static class TestValidator implements Validator {
-        @Override
-        public <T> Set<ConstraintViolation<T>> validate(T object, Class<?>... groups) {
-            return new HashSet<>(); // Return empty set - no validation errors
-        }
+    @Test
+    public void testLookupMemberByIdApi_whenMemberExists() {
+        Member member = membersList.get(0);
+        when(memberRepository.findByIdOptional(ArgumentMatchers.eq(member.id)))
+                .thenReturn(Optional.of(member));
 
-        @Override
-        public <T> Set<ConstraintViolation<T>> validateProperty(
-                T object, String propertyName, Class<?>... groups) {
-            return new HashSet<>(); // Return empty set - no validation errors
-        }
+        RestAssured.given()
+                .log()
+                .all()
+                .when()
+                .get("/rest/app/api/members/" + member.id)
+                .then()
+                .log()
+                .all()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("name", equalTo(member.name))
+                .body("email", equalTo(member.email))
+                .body("phoneNumber", equalTo(member.phoneNumber));
+    }
 
-        @Override
-        public <T> Set<ConstraintViolation<T>> validateValue(
-                Class<T> beanType, String propertyName, Object value, Class<?>... groups) {
-            return new HashSet<>(); // Return empty set - no validation errors
-        }
+    @Test
+    public void testLookupMemberByIdApi_whenMemberDoesNotExist() {
+        Long nonExistentId = 999L;
+        when(memberRepository.findByIdOptional(ArgumentMatchers.eq(nonExistentId)))
+                .thenReturn(Optional.empty());
 
-        @Override
-        public BeanDescriptor getConstraintsForClass(Class<?> clazz) {
-            return null;
-        }
+        RestAssured.given()
+                .log()
+                .all()
+                .when()
+                .get("/rest/app/api/members/" + nonExistentId)
+                .then()
+                .log()
+                .all()
+                .statusCode(404);
+    }
 
-        @Override
-        public <T> T unwrap(Class<T> type) {
-            return null;
-        }
+    @Test
+    public void testCreateMemberApi_success() throws Exception {
+        Member newMember = new Member();
+        newMember.name = "Test User";
+        newMember.email = "test.user@example.com";
+        newMember.phoneNumber = "1122334455";
 
-        @Override
-        public ExecutableValidator forExecutables() {
-            return null;
-        }
+        // Mock successful registration
+        // The service will call validator.validate(member) first.
+        // For simplicity, assume validation passes. We'll test validation failure separately.
+        // The service then calls registrationService.register(member).
+        // The register method in MemberRegistration might modify the member (e.g., assign an ID).
+        // We need to simulate this if the response relies on it.
+        org.mockito.Mockito.doAnswer(
+                        invocation -> {
+                            Member memberArg = invocation.getArgument(0);
+                            memberArg.id = 3L; // Simulate ID assignment
+                            return null; // void method
+                        })
+                .when(memberRegistration)
+                .register(ArgumentMatchers.any(Member.class));
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(201)
+                .body("id", equalTo(3))
+                .body("name", equalTo(newMember.name))
+                .body("email", equalTo(newMember.email));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_blankName() {
+        Member newMember = new Member();
+        newMember.name = ""; // Blank name - should fail validation
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = "1234567890";
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400) // Bad Request due to validation
+                // Check for the specific validation error message for 'name'
+                // The actual error structure comes from createViolationResponse
+                .body(
+                        "name",
+                        equalTo("size must be between 1 and 25")); // Adjusted: @Size triggers for
+        // blank
+        // Member.name
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_nameTooLong() {
+        Member newMember = new Member();
+        newMember.name = "ThisNameIsDefinitelyWayTooLongForTheValidation"; // Exceeds 25 chars
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = "1234567890";
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body("name", equalTo("size must be between 1 and 25"));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_nameWithNumbers() {
+        Member newMember = new Member();
+        newMember.name = "Name123"; // Contains numbers
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = "1234567890";
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body("name", equalTo("Must not contain numbers"));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_nullEmail() {
+        Member newMember = new Member();
+        newMember.name = "Valid Name";
+        newMember.email = null; // Null email
+        newMember.phoneNumber = "1234567890";
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body("email", equalTo("must not be null"));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_invalidEmailFormat() {
+        Member newMember = new Member();
+        newMember.name = "Valid Name";
+        newMember.email = "invalidemail"; // Invalid email format
+        newMember.phoneNumber = "1234567890";
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body("email", equalTo("must be a well-formed email address"));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_nullPhoneNumber() {
+        Member newMember = new Member();
+        newMember.name = "Valid Name";
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = null; // Null phone number
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body("phoneNumber", equalTo("must not be null"));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_phoneNumberTooShort() {
+        Member newMember = new Member();
+        newMember.name = "Valid Name";
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = "12345"; // Too short
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body("phoneNumber", equalTo("size must be between 10 and 12"));
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_phoneNumberTooLong() {
+        Member newMember = new Member();
+        newMember.name = "Valid Name";
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = "1234567890123"; // Too long
+
+        String phoneNumberError =
+                RestAssured.given()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(newMember)
+                        .log()
+                        .all()
+                        .when()
+                        .post("/rest/app/api/members")
+                        .then()
+                        .log()
+                        .all()
+                        .statusCode(400)
+                        .extract()
+                        .path("phoneNumber");
+
+        assertTrue(
+                "size must be between 10 and 12".equals(phoneNumberError)
+                        || "numeric value out of bounds (<12 digits>.<0 digits> expected)"
+                                .equals(phoneNumberError),
+                "Phone number validation message did not match expected options. Got: "
+                        + phoneNumberError);
+    }
+
+    @Test
+    public void testCreateMemberApi_validationFailure_phoneNumberWithNonDigits() {
+        Member newMember = new Member();
+        newMember.name = "Valid Name";
+        newMember.email = "valid.email@example.com";
+        newMember.phoneNumber = "123-456-7890"; // Contains non-digits
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(400)
+                .body(
+                        "phoneNumber",
+                        equalTo(
+                                "numeric value out of bounds (<12 digits>.<0 digits> expected)")); // Adjusted: @Digits triggers
+    }
+
+    @Test
+    public void testCreateMemberApi_conflict_emailAlreadyExists() throws Exception {
+        Member newMember = new Member();
+        newMember.name = "Test User";
+        newMember.email = "existing.email@example.com";
+        newMember.phoneNumber = "1122334455";
+
+        // Mock the registration service to throw EmailAlreadyExistsException
+        org.mockito.Mockito.doThrow(
+                        new MemberRegistration.EmailAlreadyExistsException("Email already exists"))
+                .when(memberRegistration)
+                .register(ArgumentMatchers.any(Member.class));
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(409) // Conflict
+                .body("email", equalTo("Email already exists"));
+    }
+
+    @Test
+    public void testCreateMemberApi_conflict_idProvidedInRequest() {
+        Member newMember = new Member();
+        newMember.id = 123L; // ID is provided, which is not allowed for creation
+        newMember.name = "Test User With ID";
+        newMember.email = "id.provided@example.com";
+        newMember.phoneNumber = "1122334455";
+
+        RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(newMember)
+                .log()
+                .all()
+                .when()
+                .post("/rest/app/api/members")
+                .then()
+                .log()
+                .all()
+                .statusCode(409) // Conflict
+                .body(
+                        "id",
+                        equalTo(
+                                "ID must not be set for new member registration. It will be auto-generated."));
     }
 }

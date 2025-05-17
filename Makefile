@@ -1,4 +1,4 @@
-.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir purge-mongo-data start-clean
+.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir purge-mongo-data start-clean format
 
 # Variables
 MVN := mvn
@@ -18,6 +18,7 @@ help:
 	@echo "  make purge-mongo-data     - Purge existing MongoDB data volume"
 	@echo "  make start-clean          - Purge MongoDB data and then start the application"
 	@echo "  make test                 - Run application unit tests (includes style check)"
+	@echo "  make format               - Run the auto-formatter (Spotless) on the application code"
 	@echo "  make test-coverage        - Run application unit tests with code coverage (includes style check)"
 	@echo "  make test-report          - Open the application's coverage report in a browser"
 	@echo "  make acceptance-test      - Start app, run acceptance tests, then stop app"
@@ -28,12 +29,12 @@ help:
 	@echo ""
 
 # Build the Docker image
-build:
+build: format
 	@echo "Building Kitchensink Docker image (Dockerfile in app/, docker-compose.yml in root)..."
 	docker-compose build
 
 # Run the application
-run:
+run: format
 	@echo "Starting Kitchensink application (Dockerfile in app/, docker-compose.yml in root)..."
 	docker-compose up -d
 	@echo "Application will be available at http://localhost:8080/rest/app/ui"
@@ -75,13 +76,13 @@ start-clean: purge-mongo-data start
 	@echo "Application started with a clean slate of MongoDB data."
 
 # Run unit tests for the main application
-test:
+test: format
 	@echo "Running application tests in app/ directory..."
 	(cd app && \
 		$(MVN) clean test $(MAVEN_OPTS))
 
 # Run unit tests with code coverage for the main application
-test-coverage:
+test-coverage: format
 	@echo "Running application tests with coverage in app/ directory (using quarkus-jacoco extension)..."
 	(cd app && \
 		$(MVN) clean verify $(MAVEN_OPTS))
@@ -104,7 +105,7 @@ test-report: test-coverage
 	fi
 
 # Run acceptance tests
-acceptance-test:
+acceptance-test: format
 	@echo "Starting MIGRATED application for acceptance tests (docker-compose.yml in root)..."
 	docker-compose rm -s -f mongo || true # Ensure mongo is gone, ignore error if not found
 	touch app/pom.xml # Bust cache for POM
@@ -177,4 +178,11 @@ open-video-dir:
 
 # Run all tests
 test-all: test-coverage acceptance-test ui-test
-	@echo "All tests (unit, coverage, acceptance, UI) completed." 
+	@echo "All tests (unit, coverage, acceptance, UI) completed."
+
+# Add the new format target
+format:
+	@echo "Running auto-formatter (Spotless) on application code in app/ directory..."
+	(cd app && \
+		$(MVN) spotless:apply $(MAVEN_OPTS))
+	@echo "Auto-formatting attempt finished." 
