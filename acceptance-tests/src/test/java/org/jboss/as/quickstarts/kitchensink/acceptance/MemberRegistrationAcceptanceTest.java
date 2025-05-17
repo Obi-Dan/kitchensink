@@ -92,6 +92,23 @@ public class MemberRegistrationAcceptanceTest {
 
     @Test
     @Order(1)
+    public void testSimplestPostEndpoint() {
+        System.out.println("Testing POST /rest/members/simplest");
+        String name = "SimplePostName";
+        given()
+            .contentType(ContentType.TEXT) // Send as plain text
+            .body(name)
+        .when()
+            .post(API_BASE_PATH + "/simplest")
+        .then()
+            .statusCode(200)
+            .contentType(ContentType.TEXT)
+            .body(equalTo("Created minimal: " + name));
+        System.out.println("POST /rest/members/simplest test PASSED");
+    }
+
+    @Test
+    @Order(1)
     public void testRegisterNewMemberSuccessfully() {
         long timestamp = System.currentTimeMillis();
         String testName = generateValidName();
