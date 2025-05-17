@@ -16,12 +16,14 @@
  */
 package org.jboss.as.quickstarts.kitchensink.service;
 
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
+import io.quarkus.runtime.annotations.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.bson.Document;
@@ -29,14 +31,21 @@ import org.bson.Document;
 @ApplicationScoped
 public class SequenceGeneratorService {
 
-    @Inject MongoDatabase database;
+    @Inject MongoClient mongoClient;
+
+    @ConfigProperty(name = "quarkus.mongodb.database")
+    String databaseName;
 
     private static final String COUNTERS_COLLECTION_NAME = "counters";
     private static final String SEQUENCE_FIELD_NAME = "seq";
 
+    private MongoDatabase getDatabase() {
+        return mongoClient.getDatabase(databaseName);
+    }
+
     public Long getNextSequence(String sequenceName) {
         MongoCollection<Document> countersCollection =
-                database.getCollection(COUNTERS_COLLECTION_NAME);
+                getDatabase().getCollection(COUNTERS_COLLECTION_NAME);
 
         Document sequenceDocument =
                 countersCollection.findOneAndUpdate(
@@ -66,7 +75,7 @@ public class SequenceGeneratorService {
 
     public void initializeSequence(String sequenceName, long initialValue) {
         MongoCollection<Document> countersCollection =
-                database.getCollection(COUNTERS_COLLECTION_NAME);
+                getDatabase().getCollection(COUNTERS_COLLECTION_NAME);
         Document counter = countersCollection.find(Filters.eq("_id", sequenceName)).first();
         if (counter == null) {
             countersCollection.insertOne(

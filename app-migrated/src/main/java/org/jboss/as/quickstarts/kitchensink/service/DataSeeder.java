@@ -16,11 +16,13 @@
  */
 package org.jboss.as.quickstarts.kitchensink.service;
 
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.annotations.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -34,18 +36,25 @@ public class DataSeeder {
     private static final Logger LOG = Logger.getLogger(DataSeeder.class);
     private static final String MEMBER_ID_SEQUENCE_NAME = "memberId";
 
-    @Inject MongoDatabase mongoDatabase;
+    @Inject MongoClient mongoClient;
+
+    @ConfigProperty(name = "quarkus.mongodb.database")
+    String databaseName;
 
     @Inject MemberRepository memberRepository;
 
     @Inject SequenceGeneratorService sequenceGenerator;
+
+    private MongoDatabase getDatabase() {
+        return mongoClient.getDatabase(databaseName);
+    }
 
     void onStart(@Observes StartupEvent ev) {
         LOG.info("DataSeeder: Checking and seeding initial data if necessary.");
 
         try {
             MongoCollection<Member> memberCollection =
-                    mongoDatabase.getCollection("members", Member.class);
+                    getDatabase().getCollection("members", Member.class);
             memberCollection.createIndex(
                     Indexes.ascending("email"), new IndexOptions().unique(true));
             LOG.info(
@@ -54,7 +63,6 @@ public class DataSeeder {
             LOG.error("Failed to create unique index on email for members collection", e);
         }
 
-        // Initialize sequence to -1 so the first ID generated is 0.
         sequenceGenerator.initializeSequence(MEMBER_ID_SEQUENCE_NAME, -1L);
         LOG.info(
                 "Initialized sequence '"
