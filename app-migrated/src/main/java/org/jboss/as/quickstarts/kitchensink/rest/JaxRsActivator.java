@@ -22,4 +22,4 @@ import jakarta.ws.rs.core.Application;
 @ApplicationPath("/") // Set to root, JAX-RS paths in resources will be absolute
 public class JaxRsActivator extends Application {
     /* class body intentionally left blank */
-} 
+}
