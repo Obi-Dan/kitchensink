@@ -32,7 +32,8 @@ public class MemberRepository implements PanacheMongoRepositoryBase<Member, Long
         if (id == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(find("id", id).firstResult()); // Panache should map field 'id' to '_id'
+        return Optional.ofNullable(
+                find("id", id).firstResult()); // Panache should map field 'id' to '_id'
     }
 
     // PanacheMongoRepositoryBase provides common methods like:
