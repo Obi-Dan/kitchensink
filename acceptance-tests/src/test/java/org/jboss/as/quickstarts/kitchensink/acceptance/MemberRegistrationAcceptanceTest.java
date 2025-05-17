@@ -77,6 +77,20 @@ public class MemberRegistrationAcceptanceTest {
     }
 
     @Test
+    @Order(-1) // Run even before ping
+    public void testGreetingEndpoint() {
+        System.out.println("Testing GET /hello");
+        given()
+            .when()
+                .get("/hello") // Absolute path from root
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.TEXT)
+                .body(equalTo("Hello from RESTEasy Reactive"));
+        System.out.println("GET /hello test PASSED");
+    }
+
+    @Test
     @Order(1)
     public void testRegisterNewMemberSuccessfully() {
         long timestamp = System.currentTimeMillis();
