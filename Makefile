@@ -30,8 +30,8 @@ run:
 	@echo "Starting Kitchensink application (Dockerfile in app/, docker-compose.yml in root)..."
 	docker-compose up -d
 	@echo "Application will be available at http://localhost:8080/kitchensink"
-	@echo "WildFly Management Console available at http://localhost:9990"
-	@echo "Management Console credentials: admin / Admin#70365"
+
+
 
 # Stop the application
 stop:
