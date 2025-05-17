@@ -79,15 +79,15 @@ public class MemberRegistrationAcceptanceTest {
     @Test
     @Order(-1) // Run even before ping
     public void testGreetingEndpoint() {
-        System.out.println("Testing GET /hello");
+        System.out.println("Testing GET /rest/hello");
         given()
             .when()
-                .get("/hello") // Absolute path from root
+                .get("/rest/hello") // UPDATED: Full path including /rest
             .then()
                 .statusCode(200)
                 .contentType(ContentType.TEXT)
                 .body(equalTo("Hello from RESTEasy Reactive"));
-        System.out.println("GET /hello test PASSED");
+        System.out.println("GET /rest/hello test PASSED");
     }
 
     @Test
