@@ -76,7 +76,10 @@ public class MemberResourceRESTService {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public Response createMemberApiMinimal(String name) {
-        LOG.info("API: createMemberApiMinimal received name: " + name + " at /rest/members/simplest");
+        LOG.info(
+                "API: createMemberApiMinimal received name: "
+                        + name
+                        + " at /rest/members/simplest");
         return Response.ok("Created minimal: " + name).type(MediaType.TEXT_PLAIN).build();
     }
 
