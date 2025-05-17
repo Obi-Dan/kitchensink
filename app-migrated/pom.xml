@@ -6,6 +6,7 @@
     <groupId>org.jboss.as.quickstarts</groupId>
     <artifactId>kitchensink-quarkus</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <!-- Cache bust comment -->
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

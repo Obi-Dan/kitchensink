@@ -7,15 +7,14 @@ WORKDIR /project
 # Copy only the pom.xml to leverage Docker cache for dependencies
 COPY pom.xml .
 
-# Clean and Download dependencies. This layer is rebuilt only if pom.xml changes.
-RUN mvn clean dependency:go-offline -B
+# Clean, Download dependencies, ensuring fresh state
+RUN rm -rf target && mvn clean dependency:go-offline -B
 
 # Copy the rest of the application source code
 COPY src ./src
 
-# Clean and Build the Uber-JAR. 
-# Use -DskipTests to avoid running tests during Docker image build if they are run elsewhere.
-RUN mvn clean package -Dquarkus.package.type=uber-jar -DskipTests
+# Clean, Build the Uber-JAR, ensuring fresh state
+RUN rm -rf target && mvn clean package -Dquarkus.package.type=uber-jar -DskipTests
 
 # Stage 2: Create the runtime image
 FROM eclipse-temurin:21-jre-jammy AS runtime
