@@ -76,11 +76,11 @@
                     <tbody>
                         {#for member in members}
                         <tr>
-                            <td>{member.stringId}</td> <!--# Assuming Member has getStringId() or id.toString() #-->
+                            <td>{member.id}</td> <!--# Assuming Member has getStringId() or id.toString() #-->
                             <td>{member.name}</td>
                             <td>{member.email}</td>
                             <td>{member.phoneNumber}</td>
-                            <td><a href="/rest/app/api/members/{member.stringId}">/rest/app/api/members/{member.stringId}</a></td>
+                            <td><a href="/rest/app/api/members/{member.id}">/rest/app/api/members/{member.id}</a></td>
                         </tr>
                         {/for}
                     </tbody>
