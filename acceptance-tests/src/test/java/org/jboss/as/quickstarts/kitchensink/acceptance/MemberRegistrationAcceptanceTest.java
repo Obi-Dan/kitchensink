@@ -81,15 +81,15 @@ public class MemberRegistrationAcceptanceTest {
     @Test
     @Order(0) 
     public void testPingPostEndpoint() {
-        System.out.println("Testing POST " + MEMBERS_API_SUBPATH + "/ping (relative to " + RestAssured.baseURI + ")");
+        System.out.println("Testing GET " + MEMBERS_API_SUBPATH + "/ping (relative to " + RestAssured.baseURI + ")");
         given()
             .when()
-                .post(MEMBERS_API_SUBPATH + "/ping") // e.g. /rest/members/ping
+                .get(MEMBERS_API_SUBPATH + "/ping")
             .then()
                 .statusCode(200)
                 .contentType(ContentType.TEXT)
-                .body(equalTo("pong_post"));
-        System.out.println("POST " + MEMBERS_API_SUBPATH + "/ping test PASSED");
+                .body(equalTo("pong_get"));
+        System.out.println("GET " + MEMBERS_API_SUBPATH + "/ping test PASSED");
     }
 
     @Test

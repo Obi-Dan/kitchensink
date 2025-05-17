@@ -63,12 +63,12 @@ public class MemberResourceRESTService {
 
     // @Inject @Location("Member/index.html") Template index; // Qute still commented out
 
-    @POST
+    @GET
     @Path("/members/ping") // Effective: /rest/members/ping
     @Produces(MediaType.TEXT_PLAIN)
     public Response pingPost() {
-        LOG.info("API: Ping POST received at /rest/members/ping!");
-        return Response.ok("pong_post").type(MediaType.TEXT_PLAIN).build();
+        LOG.info("API: Ping GET received at /rest/members/ping!");
+        return Response.ok("pong_get").type(MediaType.TEXT_PLAIN).build();
     }
 
     @POST
