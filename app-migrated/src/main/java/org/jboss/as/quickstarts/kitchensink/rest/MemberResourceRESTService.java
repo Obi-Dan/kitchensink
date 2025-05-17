@@ -17,7 +17,6 @@
 package org.jboss.as.quickstarts.kitchensink.rest;
 
 import io.quarkus.panache.common.Sort;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
