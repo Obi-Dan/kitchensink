@@ -124,22 +124,25 @@ public class MemberResourceRESTService {
 
         LOG.info(
                 "API: Attempting to create member: " + member.email + " with name: " + member.name);
-        Response.ResponseBuilder builder;
         try {
             LOG.info("API: Validating member bean for: " + member.email);
             validateMemberBean(member);
             LOG.info("API: Calling registration service for: " + member.email);
             registrationService.register(member);
-            LOG.info("API: Registration service call completed for: " + member.email);
-            builder = Response.status(Response.Status.CREATED).entity(member);
+            LOG.info(
+                    "API: Member registered successfully: "
+                            + member.email
+                            + " with ID: "
+                            + member.id);
+            return Response.status(Response.Status.CREATED).entity(member).build();
         } catch (ConstraintViolationException ce) {
             LOG.warn("API: ConstraintViolationException for member: " + member.email, ce);
-            builder = createViolationResponse(ce.getConstraintViolations());
+            return createViolationResponse(ce.getConstraintViolations());
         } catch (MemberRegistration.EmailAlreadyExistsException e) {
             LOG.warn("API: EmailAlreadyExistsException for: " + member.email, e);
             Map<String, String> responseObj = new HashMap<>();
             responseObj.put("email", "Email already exists");
-            builder = Response.status(Response.Status.CONFLICT).entity(responseObj);
+            return Response.status(Response.Status.CONFLICT).entity(responseObj).build();
         } catch (Exception e) {
             LOG.error(
                     "API: Generic Exception creating member: "
@@ -149,10 +152,10 @@ public class MemberResourceRESTService {
                     e);
             Map<String, String> responseObj = new HashMap<>();
             responseObj.put("error", "An unexpected error occurred: " + e.getMessage());
-            builder = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(responseObj);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(responseObj)
+                    .build();
         }
-        LOG.info("API: Building response for createMemberApi for email: " + member.email);
-        return builder.build();
     }
 
     @GET
