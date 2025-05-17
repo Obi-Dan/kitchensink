@@ -63,6 +63,20 @@ public class MemberRegistrationAcceptanceTest {
     }
 
     @Test
+    @Order(0)
+    public void testPingPostEndpoint() {
+        System.out.println("Testing POST /rest/members/ping");
+        given()
+            .when()
+                .post(API_BASE_PATH + "/ping")
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.TEXT)
+                .body(equalTo("pong_post"));
+        System.out.println("POST /rest/members/ping test PASSED");
+    }
+
+    @Test
     @Order(1)
     public void testRegisterNewMemberSuccessfully() {
         long timestamp = System.currentTimeMillis();

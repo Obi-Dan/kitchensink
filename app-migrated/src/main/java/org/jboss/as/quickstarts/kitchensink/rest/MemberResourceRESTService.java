@@ -264,4 +264,12 @@ public class MemberResourceRESTService {
         }
         return Response.status(Response.Status.BAD_REQUEST).entity(responseObj).build();
     }
+
+    @POST
+    @Path("/rest/members/ping")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String pingPost() {
+        LOG.info("API: Ping POST received!");
+        return "pong_post";
+    }
 }
