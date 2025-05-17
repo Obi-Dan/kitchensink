@@ -46,13 +46,15 @@ import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
 import org.jboss.as.quickstarts.kitchensink.service.MemberRegistration;
 import org.jboss.logging.Logger;
+import jakarta.enterprise.context.ApplicationScoped; // Re-add if needed, or keep as plain JAX-RS
 
 /**
  * JAX-RS Example
  *
  * <p>This class produces a RESTful service to read/write the contents of the members table.
  */
-@Path("/")
+@Path("/members") // ADDED CLASS-LEVEL PATH /members
+@ApplicationScoped // Re-adding this for good measure, should work either way
 public class MemberResourceRESTService {
 
     private static final Logger LOG = Logger.getLogger(MemberResourceRESTService.class);
@@ -63,8 +65,8 @@ public class MemberResourceRESTService {
 
     // @Inject @Location("Member/index.html") Template index; // Qute still commented out
 
-    @GET
-    @Path("/members/ping") // Effective: /rest/members/ping
+    @GET // Was POST, changed to GET for ping test
+    @Path("/ping") // Path relative to /members. Effective: /rest/members/ping
     @Produces(MediaType.TEXT_PLAIN)
     public Response pingPost() {
         LOG.info("API: Ping GET received at /rest/members/ping!");
@@ -72,7 +74,7 @@ public class MemberResourceRESTService {
     }
 
     @POST
-    @Path("/members/simplest") // Effective: /rest/members/simplest
+    @Path("/simplest") // Path relative to /members. Effective: /rest/members/simplest
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public Response createMemberApiMinimal(String name) {
