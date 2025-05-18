@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The "kitchensink" project is a demonstration application originally designed as a Java Enterprise Application (Jakarta EE) quickstart for JBoss Enterprise Application Platform (EAP). This version has been migrated to **Quarkus**, a Supersonic Subatomic Java Framework, to showcase modern cloud-native Java development. It utilizes **MongoDB** as its persistent data store.
+The "kitchensink" project is a demonstration application originally designed as a Java Enterprise Application (Jakarta EE) quickstart for JBoss Enterprise Application Platform (EAP). This version has been migrated to **Quarkus**, a Supersonic Subatomic Java Framework, to showcase modern cloud-native Java development. It utilizes **Java 21**. In addition, it utilizes **MongoDB** as its persistent data store.
 
 The application implements a simple member registration and management system, allowing users to add, view, and validate member information. It serves as a learning tool and a starting point for developers building enterprise applications with Quarkus.
 
@@ -14,7 +14,7 @@ This application is containerized using Docker and managed with `docker-compose`
 
 **Prerequisites:**
 *   Docker and Docker Compose installed.
-*   A Java Development Kit (JDK) compatible with Quarkus (e.g., JDK 17+).
+*   Java Development Kit (JDK) 21.
 *   Apache Maven.
 
 **Recommended Way to Start (Build, Run, and Open UI):**
