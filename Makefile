@@ -1,4 +1,4 @@
-.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir purge-mongo-data start-clean format
+.PHONY: build run stop logs clean test test-coverage test-report acceptance-test help test-all ui-test open-video-dir purge-mongo-data start-clean format launch
 
 # Variables
 MVN := mvn
@@ -26,6 +26,7 @@ help:
 	@echo "  make test-all             - Run all tests (unit, coverage, acceptance, UI)"
 	@echo "  make open-video-dir       - Open the UI test video recording directory"
 	@echo "  make help                 - Show this help message"
+	@echo "  make launch               - Run 'start-clean' then open the application UI in a browser"
 	@echo ""
 
 # Build the Docker image
@@ -185,4 +186,18 @@ format:
 	@echo "Running auto-formatter (Spotless) on application code in app/ directory..."
 	(cd app && \
 		$(MVN) spotless:apply $(MAVEN_OPTS))
-	@echo "Auto-formatting attempt finished." 
+	@echo "Auto-formatting attempt finished."
+
+# Launch the application: start-clean then open UI
+launch:
+	$(MAKE) start-clean
+	@echo "Waiting a few seconds for the application to be fully up..."
+	@sleep 15 # Adjust sleep time as needed
+	@echo "Attempting to open application UI at http://localhost:8080/rest/app/ui..."
+	@if [ "$(shell uname)" = "Darwin" ]; then \
+		open http://localhost:8080/rest/app/ui; \
+	elif [ "$(shell uname)" = "Linux" ]; then \
+		xdg-open http://localhost:8080/rest/app/ui; \
+	else \
+		echo "Please open http://localhost:8080/rest/app/ui in your browser."; \
+	fi 

@@ -14,7 +14,7 @@ RUN rm -rf target && mvn clean dependency:go-offline -B
 COPY src ./src
 
 # Clean, Build the Uber-JAR, ensuring fresh state
-RUN rm -rf target && mvn clean package -Dquarkus.package.type=uber-jar -DskipTests
+RUN rm -rf target && mvn clean package -Dquarkus.package.type=uber-jar
 
 # Stage 2: Create the runtime image
 FROM eclipse-temurin:21-jre-jammy AS runtime

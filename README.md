@@ -30,28 +30,35 @@ This application is containerized using Docker and managed with `docker-compose`
 *   A Java Development Kit (JDK) compatible with Quarkus (e.g., JDK 17+).
 *   Apache Maven.
 
-**Steps to Build and Run:**
+**Recommended Way to Start (Build, Run, and Open UI):**
 
 1.  **Clone the repository.**
 2.  **Navigate to the project root directory.**
-3.  **Start the application with a clean database:**
+3.  **Launch the application:**
+    ```bash
+    make launch
+    ```
+    This command will:
+    *   Ensure any existing MongoDB data volume is purged (for a clean start).
+    *   Build the application Docker image (which includes compiling the Quarkus app via Maven).
+    *   Start the application and its MongoDB database using `docker-compose`.
+    *   Wait a few seconds for the application to initialize.
+    *   Automatically open the application's web UI (`http://localhost:8080/rest/app/ui`) in your default browser.
+
+**Alternative Start Commands (if you don't need to open the UI automatically or want more control):**
+
+*   **Start with a clean database (without auto-opening UI):**
     ```bash
     make start-clean
     ```
-    This command will:
-    *   Purge any existing MongoDB data volume (if present).
-    *   Build the application Docker image (which includes compiling the Quarkus app via Maven).
-    *   Start the application and its MongoDB database using `docker-compose`.
-
-4.  **Alternatively, to start without cleaning the database (if already built and run before):**
+*   **Start without cleaning the database (if already built and run before, without auto-opening UI):**
     ```bash
     make start
     ```
-    This will build the Docker images if they don't exist and then run the application.
 
-5.  **Access the application:**
-    *   The web UI will be available at: `http://localhost:8080/rest/app/ui`
-    *   The REST API base will be: `http://localhost:8080/rest/app/api`
+**Accessing the application (if not using `make launch`):**
+*   The web UI will be available at: `http://localhost:8080/rest/app/ui`
+*   The REST API base will be: `http://localhost:8080/rest/app/api`
 
 ## Testing the Application
 
@@ -115,6 +122,7 @@ The `Makefile` provides several targets to simplify common development tasks:
 *   `purge-mongo-data`: Stops and removes the MongoDB container and its data volume.
 *   `start-clean`: Runs `purge-mongo-data` then `start` for a fresh application start.
 *   `format`: Runs the Spotless code auto-formatter on the application code (`app/` directory). This is automatically run before `build`, `run`, `test`, `test-coverage`, and `acceptance-test`.
+*   `launch`: Runs `start-clean` to ensure a fresh environment, then starts the application and attempts to open the UI (`http://localhost:8080/rest/app/ui`) in your default browser. **This is the recommended target for quickly getting the application running for development or demonstration.**
 *   `test`: Runs unit tests and style checks.
 *   `test-coverage`: Runs unit tests and generates a code coverage report.
 *   `test-report`: Opens the code coverage report.
