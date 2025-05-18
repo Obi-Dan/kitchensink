@@ -2,24 +2,11 @@
 
 ## Project Overview
 
-The "kitchensink" project is a demonstration application originally designed as a Java Enterprise Application (Jakarta EE) quickstart for JBoss Enterprise Application Platform (EAP). This version has been migrated to **Quarkus**, a Supersonic Subatomic Java Framework, to showcase modern cloud-native Java development.
+The "kitchensink" project is a demonstration application originally designed as a Java Enterprise Application (Jakarta EE) quickstart for JBoss Enterprise Application Platform (EAP). This version has been migrated to **Quarkus**, a Supersonic Subatomic Java Framework, to showcase modern cloud-native Java development. It utilizes **MongoDB** as its persistent data store.
 
 The application implements a simple member registration and management system, allowing users to add, view, and validate member information. It serves as a learning tool and a starting point for developers building enterprise applications with Quarkus.
 
-## Migration from JBoss EAP (WildFly) / Jakarta EE
-
-This project was migrated from a traditional Jakarta EE architecture (utilizing technologies like JSF, EJBs, and deploying as a WAR to WildFly) to a streamlined Quarkus application. The migration focused on:
-
-*   Replacing Jakarta EE components with their Quarkus equivalents or idiomatic Quarkus approaches (e.g., using Panache for persistence, RESTEasy Reactive for JAX-RS, Qute for templating).
-*   Leveraging Quarkus's build-time optimizations and live coding features.
-*   Containerizing the application using Docker with a Quarkus-optimized image.
-*   Simplifying the deployment and configuration.
-
-For a detailed log of the migration process, decisions made, and challenges encountered, please refer to the [MIGRATION_DIARY.md](MIGRATION_DIARY.md).
-
-To understand the original architecture before migration, see:
-*   [ORIGINAL_ARCHITECTURE.md](ORIGINAL_ARCHITECTURE.md)
-*   [ORIGINAL_UI_SEQUENCE.md](ORIGINAL_UI_SEQUENCE.md) (for the UI interaction flow)
+Most of the migration and modernization effort for this project was performed with the assistance of **Generative AI**, highlighting its capabilities in accelerating software development and technology transitions.
 
 ## Developer Quick Start: Building and Running the Application
 
@@ -59,6 +46,36 @@ This application is containerized using Docker and managed with `docker-compose`
 **Accessing the application (if not using `make launch`):**
 *   The web UI will be available at: `http://localhost:8080/rest/app/ui`
 *   The REST API base will be: `http://localhost:8080/rest/app/api`
+
+## Migration from JBoss EAP (WildFly) / Jakarta EE
+
+This project was migrated from a traditional Jakarta EE architecture (utilizing technologies like JSF, EJBs, and deploying as a WAR to WildFly) to a streamlined Quarkus application. The migration focused on:
+
+*   Replacing Jakarta EE components with their Quarkus equivalents or idiomatic Quarkus approaches (e.g., using Panache for persistence, RESTEasy Reactive for JAX-RS, Qute for templating).
+*   Leveraging Quarkus's build-time optimizations and live coding features.
+*   Containerizing the application using Docker with a Quarkus-optimized image.
+*   Simplifying the deployment and configuration.
+
+For a detailed log of the migration process, decisions made, and challenges encountered, please refer to the [MIGRATION_DIARY.md](docs/MIGRATION_DIARY.md).
+
+To understand the original architecture before migration, see:
+*   [ORIGINAL_ARCHITECTURE.md](docs/ORIGINAL_ARCHITECTURE.md)
+*   [ORIGINAL_UI_SEQUENCE.md](docs/ORIGINAL_UI_SEQUENCE.md) (for the UI interaction flow)
+
+## Additional Documentation
+
+The `docs/` folder contains further information about the project, its history, and development practices:
+
+*   [**ACCEPTANCE_TESTS.md**](docs/ACCEPTANCE_TESTS.md): Details on the strategy and execution of API and UI acceptance tests.
+*   [**BUSINESS_REQUIREMENTS.md**](docs/BUSINESS_REQUIREMENTS.md): Outlines the business goals and functional requirements for the application.
+*   [**CODING_STANDARDS.md**](docs/CODING_STANDARDS.md): Specifies coding conventions and style guidelines adopted for this project.
+*   [**MIGRATION_DIARY.md**](docs/MIGRATION_DIARY.md): A chronological log of the migration from JBoss EAP/Jakarta EE to Quarkus, including challenges and solutions.
+*   [**MIGRATION_STRATEGY.md**](docs/MIGRATION_STRATEGY.md): Describes the overall plan and approach taken for the application migration.
+*   [**ORIGINAL_ARCHITECTURE.md**](docs/ORIGINAL_ARCHITECTURE.md): An overview of the system architecture of the original JBoss EAP/Jakarta EE application.
+*   [**ORIGINAL_TESTS.md**](docs/ORIGINAL_TESTS.md): Information about the testing strategies and specific tests present in the original version of the application.
+*   [**ORIGINAL_UI_SEQUENCE.md**](docs/ORIGINAL_UI_SEQUENCE.md): Explanations and diagrams of user interface flows in the original JBoss EAP/Jakarta EE application.
+*   [**SUMMARY.md**](docs/SUMMARY.md): A general summary document related to the project or migration efforts.
+*   [**TEST_COVERAGE.md**](docs/TEST_COVERAGE.md): Details the overall test strategy (unit, API, UI), instructions for running tests, and analysis of unit test coverage with JaCoCo.
 
 ## Testing the Application
 
@@ -134,4 +151,4 @@ The `Makefile` provides several targets to simplify common development tasks:
 
 ## Project Requirements
 
-The business and functional requirements for this application are detailed in [BUSINESS_REQUIREMENTS.md](BUSINESS_REQUIREMENTS.md). 
+The business and functional requirements for this application are detailed in [BUSINESS_REQUIREMENTS.md](docs/BUSINESS_REQUIREMENTS.md). 
