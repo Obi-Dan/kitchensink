@@ -1,4 +1,4 @@
-# Kitchensink Application Migration Strategy
+# Kitchensink Application Migration Plan
 
 ## 1. Introduction and Goals
 
@@ -7,7 +7,7 @@ This document outlines the strategy for migrating the Kitchensink Jakarta EE app
 **Primary Goals:**
 
 1.  **Modernize the Stack:** Upgrade to JDK 21, replace JBoss EAP with a modern framework (Quarkus), and switch the database from H2 (via JPA/Hibernate) to MongoDB.
-2.  **Like-for-Like Functionality:** The migrated application's UI and API behavior must be indistinguishable from the original for end-users. All existing features and endpoints must be preserved. Additionally, the UI must be exactly the same as the previous UI - styling, images, links, and behavior with no changes, additions, or modifications including all routes. To this goal, save a docker image of the previous application that can be used to compare the migrated application.
+2.  **Like-for-Like Functionality:** The migrated application's UI and API behavior must be indistinguishable from the original for end-users. All existing features and endpoints must be preserved. Additionally, the UI must be exactly the same as the previous UI - styling, images, links, and behavior with no changes, additions, or modifications including all routes.
 3.  **Maintainability and Quality:** Employ robust software engineering principles (SOLID, DRY, Clean Architecture, LEAN) to ensure a high-quality, maintainable codebase.
 4.  **Containerization for Testing:** Utilize Docker for running MongoDB during acceptance tests.
 5.  **Risk Mitigation:** Proactively identify and mitigate risks throughout the migration process.
