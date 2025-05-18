@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>kitchensink</title>
+    <link rel="stylesheet" type="text/css" href="/css/screen.css"/>
+</head>
+<body>
+    <div id="container">
+        <div class="dualbrand">
+            <img src="/gfx/rhjb_eap_logo.png" alt="JBoss Enterprise Application Platform" width="300" height="175"/>
+        </div>
+        <div id="content">
+            <h1>Welcome to JBoss (Quarkus Edition)!</h1>
+            <div>
+                <p>You have successfully deployed a Quarkus Enterprise Application.</p>
+            </div>
+
+            <form id="reg" method="post" action="/rest/app/ui/register"> <!--# action will point to a JAX-RS endpoint #-->
+                <h2>Member Registration</h2>
+                <p>Enforces annotation-based constraints defined on the model class.</p>
+                
+                <!--# Display global messages if any #-->
+                
+
+                <table> <!--# Using table for layout similar to original h:panelGrid #-->
+                    <tbody>
+                        <tr>
+                            <td class="titleCell"><label for="name">Name:</label></td>
+                            <td><input id="name" type="text" name="name" value="{newMember.name ?: ''}"/></td>
+                            <td><span class="invalid">{errors.get('name')}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="titleCell"><label for="email">Email:</label></td>
+                            <td><input id="email" type="text" name="email" value="{newMember.email ?: ''}"/></td>
+                            <td><span class="invalid">{errors.get('email')}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="titleCell"><label for="phoneNumber">Phone #:</label></td>
+                            <td><input id="phoneNumber" type="text" name="phoneNumber" value="{newMember.phoneNumber ?: ''}"/></td>
+                            <td><span class="invalid">{errors.get('phoneNumber')}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td><input id="register" type="submit" value="Register" class="register"/></td>
+                                <td>
+                                    {#if globalMessages}
+                                        <ul class="messages">
+                                            {#for message in globalMessages}
+                                                <li class="{message.type}">{message.text}</li>
+                                            {/for}
+                                        </ul>
+                                    {/if}
+                                    <!--# Placeholder for messages that were next to button, now handled globally above #-->
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </p>
+            </form>
+
+            <h2>Members</h2>
+            {#if members} <!-- If members list is not null and not empty -->
+                <table class="simpletablestyle">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone #</th>
+                            <th>REST URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#for member in members}
+                        <tr>
+                            <td>{member.id}</td> <!--# Assuming Member has getStringId() or id.toString() #-->
+                            <td>{member.name}</td>
+                            <td>{member.email}</td>
+                            <td>{member.phoneNumber}</td>
+                            <td><a href="/rest/app/api/members/{member.id}">/rest/app/api/members/{member.id}</a></td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5">REST URL for all members: <a href="/rest/app/api/members">/rest/app/api/members</a></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            {#else} <!-- If members list IS empty (or null) -->
+                <em>No registered members.</em>
+            {/if}
+        </div>
+        <div id="aside">
+            <p>Learn more about Red Hat JBoss Enterprise Application Platform (and Quarkus!).</p>
+            <ul>
+                <li><a href="https://access.redhat.com/documentation/en/red-hat-jboss-enterprise-application-platform/">Documentation</a></li>
+                <li><a href="http://www.redhat.com/en/technologies/jboss-middleware/application-platform">Product Information</a></li>
+                <li><a href="https://quarkus.io/">Quarkus.io</a></li>
+            </ul>
+        </div>
+        <div id="footer">
+            <p>
+                This project was generated from a Maven archetype from JBoss (migrated to Quarkus).
+                <br />
+                Powered by <a href="http://quarkus.io/">Quarkus</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html> 

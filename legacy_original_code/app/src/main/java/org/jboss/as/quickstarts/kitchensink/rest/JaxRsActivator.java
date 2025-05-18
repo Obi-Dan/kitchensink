@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2023, Red Hat, Inc. and/or its affiliates, and individual
+ * Copyright 2015, Red Hat, Inc. and/or its affiliates, and individual
  * contributors by the @authors tag. See the copyright.txt in the
  * distribution for a full listing of individual contributors.
  *
@@ -30,5 +30,5 @@ import jakarta.ws.rs.core.Application;
  */
 @ApplicationPath("/rest")
 public class JaxRsActivator extends Application {
-    /* class body intentionally left blank */
+  /* class body intentionally left blank */
 }

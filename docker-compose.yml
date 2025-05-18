@@ -1,27 +1,47 @@
-version: '3.8'
-
 services:
-  app:
+  app: # Migrated Application
     build:
       context: ./app
       dockerfile: Dockerfile
     container_name: kitchensink-app
     ports:
-      - "8080:8080"  # Web interface
-      - "9990:9990"  # Admin console
+      - "8080:8080"
     networks:
       - kitchensink-network
     environment:
       - JAVA_OPTS=-Xms512m -Xmx1024m
+      - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://mongo:27017/?replicaSet=rs0 # Added replicaSet option
+      - QUARKUS_MONGODB_DATABASE=kitchensinkDB # This is already in application.properties but can be overridden
+    depends_on:
+      mongo: # Depends on the mongo service
+        condition: service_healthy # Or service_started if mongo image doesn't have a good healthcheck
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/kitchensink"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/app/api/members"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
     restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    container_name: kitchensink-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - kitchensink-network
     volumes:
-      - wildfly-logs:/opt/jboss/wildfly/standalone/log
+      - mongodb_data:/data/db
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: |
+        mongosh --eval \
+        "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [ { _id: 0, host: 'mongo:27017' } ] }).ok }" \
+        --quiet
+      interval: 10s
+      timeout: 20s
+      retries: 15
+      start_period: 120s
 
   ui-tests:
     build:
@@ -45,4 +65,5 @@ networks:
         - subnet: 172.28.0.0/16
 
 volumes:
-  wildfly-logs: 
+  # wildfly-logs: # No longer needed for Quarkus app logging primarily to console
+  mongodb_data: # For MongoDB persistence 

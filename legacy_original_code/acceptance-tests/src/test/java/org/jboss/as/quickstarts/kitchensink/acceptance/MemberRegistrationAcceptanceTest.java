@@ -25,16 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MemberRegistrationAcceptanceTest {
 
-    // Updated to use system property, defaulting for local runs if property not set.
-    private static final String DEFAULT_BASE_URL = "http://localhost:8080/rest/app/api/members";
-    private static final String BASE_URL = System.getProperty("app.base.url", DEFAULT_BASE_URL.substring(0, DEFAULT_BASE_URL.lastIndexOf('/'))) + "/members";
-
+    private static final String BASE_URL = "http://localhost:8080/kitchensink/rest/members";
     private static Random random = new Random();
 
     @BeforeAll
     public static void setup() {
         RestAssured.baseURI = BASE_URL;
-        System.out.println("Acceptance Test Base URL: " + RestAssured.baseURI);
+        // It's good practice to clear any existing members or ensure a clean state before tests if possible.
+        // However, without direct DB access or a dedicated cleanup API endpoint, this can be tricky.
+        // For now, we'll assume the tests can run independently or the environment is reset between runs.
     }
 
     private String generateValidPhoneNumber() {
@@ -49,6 +48,7 @@ public class MemberRegistrationAcceptanceTest {
 
     private String generateValidName() {
         // REQ-1.2.1: Member names must be between 1 and 25 characters and must not contain numbers.
+        // Simple name generator for testing
         String[] firstParts = {"Test", "User", "Sample", "Valid", "John", "Jane", "Alpha", "Beta"};
         String[] lastParts = {"Person", "Doe", "Smith", "Test", "User"};
         String name = firstParts[random.nextInt(firstParts.length)] + " " + lastParts[random.nextInt(lastParts.length)];
@@ -63,8 +63,14 @@ public class MemberRegistrationAcceptanceTest {
     }
 
     @Test
-    @Order(1)
+    @Order(1) // Ensure this runs first if other tests depend on a member existing
     public void testRegisterNewMemberSuccessfully() {
+        // REQ-1.1.1: The system shall allow users to register new members with name, email, and phone number.
+        // REQ-3.1.4: The API shall support creating new members (POST /members).
+        // REQ-3.1.5: The API shall return appropriate HTTP status codes (200...)
+        // REQ-3.2.3: For successful operations, the API shall return appropriate success status codes.
+        // REQ-3.2.4: The API consumes JSON. Successful POST currently returns empty body.
+
         long timestamp = System.currentTimeMillis();
         String testName = generateValidName();
         String uniqueEmail = "testuser_" + timestamp + "@example.com";
@@ -81,6 +87,7 @@ public class MemberRegistrationAcceptanceTest {
                 .add("phoneNumber", testPhone)
                 .build();
 
+        // Step 1: POST the new member
         Response postResponse = given()
             .contentType(ContentType.JSON)
             .body(newMemberPayload.toString())
@@ -90,14 +97,13 @@ public class MemberRegistrationAcceptanceTest {
         System.out.println("POST Response Status: " + postResponse.getStatusCode());
         System.out.println("POST Response Body: " + postResponse.getBody().asString());
 
-        // Quarkus RESTeasy Reactive might return 200 OK with the created entity by default
-        // The original test expected an empty body with 200.
-        // Let's adjust to check for 200 and that the returned body (if any) has the correct email.
         postResponse.then()
-            .statusCode(anyOf(is(200), is(201))) // 201 Created is also common for POST
-            .contentType(ContentType.JSON) // Expecting JSON response
-            .body("email", equalTo(uniqueEmail));
+            .statusCode(200) // REQ-3.1.5: Expect 200 OK for successful creation
+            .body(equalTo("")); // Verify that the response body is empty as per current app behavior
+            // .contentType(ContentType.JSON) // Cannot assert this if body is empty and no C-T header is sent
 
+        // Step 2: GET all members and find the newly created one to verify its details and ID generation
+        // This indirectly verifies REQ-1.1.4 (ID generation)
         Response getResponse = given()
             .accept(ContentType.JSON)
         .when()
@@ -121,17 +127,19 @@ public class MemberRegistrationAcceptanceTest {
         assertNotNull(foundMember, "Newly created member with email '" + uniqueEmail + "' not found in GET /members response.");
         assertEquals(testName, foundMember.get("name"), "Name of retrieved member does not match.");
         assertEquals(testPhone, foundMember.get("phoneNumber"), "Phone number of retrieved member does not match.");
-        assertNotNull(foundMember.get("id"), "id of retrieved member should not be null.");
-        assertTrue(foundMember.get("id") instanceof Integer || foundMember.get("id") instanceof Long, "Member id should be an Integer or Long.");
+        assertNotNull(foundMember.get("id"), "ID of retrieved member should not be null (REQ-1.1.4).");
+        assertTrue(foundMember.get("id") instanceof Number || foundMember.get("id").toString().matches("\\d+"), "Member ID should be a number.");
 
         System.out.println("Successfully registered and verified member: " + foundMember);
     }
 
     // --- Validation Failure Tests --- 
+
     @Test
     @Order(2)
     public void testRegisterMemberWithInvalidName_TooLong() {
-        String invalidName = "ThisNameIsDefinitelyMuchTooLongForTheValidationCriteria";
+        // REQ-1.2.1: Member names must be between 1 and 25 characters
+        String invalidName = "ThisNameIsDefinitelyMuchTooLongForTheValidationCriteria"; // > 25 chars
         JsonObject payload = Json.createObjectBuilder()
                 .add("name", invalidName)
                 .add("email", generateUniqueEmail())
@@ -146,12 +154,13 @@ public class MemberRegistrationAcceptanceTest {
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
-            .body("name", containsString("size must be between 1 and 25"));
+            .body("name", containsString("size must be between 1 and 25")); // Adjust error message if needed
     }
 
     @Test
     @Order(3)
     public void testRegisterMemberWithInvalidName_ContainsNumbers() {
+        // REQ-1.2.1: Member names must not contain numbers
         String invalidName = "NameWith123Numbers";
         JsonObject payload = Json.createObjectBuilder()
                 .add("name", invalidName)
@@ -174,6 +183,7 @@ public class MemberRegistrationAcceptanceTest {
     @ValueSource(strings = {"plainaddress", "@missingusername.com", "username@.com", "username@domain."})
     @Order(4)
     public void testRegisterMemberWithInvalidEmailFormat(String invalidEmail) {
+        // REQ-1.2.2: Email addresses must be valid according to standard email format validation.
         JsonObject payload = Json.createObjectBuilder()
                 .add("name", generateValidName())
                 .add("email", invalidEmail)
@@ -188,13 +198,14 @@ public class MemberRegistrationAcceptanceTest {
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
-            .body("email", containsString("must be a well-formed email address"));
+            .body("email", containsString("must be a well-formed email address")); // Common Bean Validation message for @Email
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"12345", "123456789", "1234567890123"})
+    @ValueSource(strings = {"12345", "123456789", "1234567890123"}) // Too short (<10) and too long (>12)
     @Order(5)
     public void testRegisterMemberWithInvalidPhoneNumber_Length(String invalidPhone) {
+        // REQ-1.2.3: Phone numbers must be between 10 and 12 digits
         JsonObject payload = Json.createObjectBuilder()
                 .add("name", generateValidName())
                 .add("email", generateUniqueEmail())
@@ -209,12 +220,13 @@ public class MemberRegistrationAcceptanceTest {
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
-            .body("phoneNumber", anyOf(containsString("size must be between 10 and 12"), containsString("numeric value out of bounds")));
+            .body("phoneNumber", anyOf(containsString("size must be between 10 and 12"), containsString("numeric value out of bounds (<12 digits>.<0 digits> expected)")));
     }
 
     @Test
     @Order(6)
     public void testRegisterMemberWithInvalidPhoneNumber_NonNumeric() {
+        // REQ-1.2.3: Phone numbers must contain only numeric characters
         String invalidPhone = "123-456-7890";
         JsonObject payload = Json.createObjectBuilder()
                 .add("name", generateValidName())
@@ -230,13 +242,17 @@ public class MemberRegistrationAcceptanceTest {
         .then()
             .statusCode(400)
             .contentType(ContentType.JSON)
-            .body("phoneNumber", containsString("numeric value out of bounds")); // REVERTED to more generic part of @Digits message
+            .body("phoneNumber", equalTo("numeric value out of bounds (<12 digits>.<0 digits> expected)"));
     }
 
     @Test
-    @Order(7)
+    @Order(7) // Ensure this runs after a successful registration if it reuses data
     public void testRegisterMemberWithDuplicateEmail() {
-        String existingEmail = generateUniqueEmail();
+        // REQ-1.1.2: Each member must have a unique email address in the system.
+        // REQ-3.2.2: For duplicate email addresses, the API shall return a specific conflict response.
+
+        // Step 1: Register an initial member to ensure the email exists
+        String existingEmail = generateUniqueEmail(); // Use a fresh email for this test sequence
         String initialName = generateValidName();
         String initialPhone = generateValidPhoneNumber();
 
@@ -252,14 +268,15 @@ public class MemberRegistrationAcceptanceTest {
         .when()
             .post()
         .then()
-            .statusCode(anyOf(is(200), is(201)));
+            .statusCode(200); // Assuming 200 for successful creation as per other tests
 
+        // Step 2: Attempt to register another member with the same email
         String duplicateName = "Duplicate " + generateValidName();
-        String duplicatePhone = generateValidPhoneNumber();
+        String duplicatePhone = generateValidPhoneNumber(); // Different phone
 
         JsonObject duplicateMemberPayload = Json.createObjectBuilder()
                 .add("name", duplicateName)
-                .add("email", existingEmail)
+                .add("email", existingEmail) // Same email
                 .add("phoneNumber", duplicatePhone)
                 .build();
 
@@ -269,32 +286,73 @@ public class MemberRegistrationAcceptanceTest {
         .when()
             .post()
         .then()
-            .statusCode(409)
+            .statusCode(409) // REQ-3.1.5: Expect 409 Conflict for duplicate email
             .contentType(ContentType.JSON)
-            .body("email", containsString("Email already exists")); // Updated to match exception
+            // The actual error message structure for duplicates needs to be verified.
+            // Assuming it's similar to other validation errors, e.g., {"email": "Email address is already in use"}
+            // Or it might be a general message in the body.
+            // For now, let's check for a body that contains the word "duplicate" or "conflict" or "unique" related to email.
+            // This assertion might need adjustment based on actual API response.
+            .body("email", containsString("Email taken")) // Corrected based on actual error message
+            // Alternative: .body(containsString("Email address already exists"));
+            // Alternative: .body(containsString("Unique constraint violation"));
+            ;
     }
 
     @Test
     @Order(8)
     public void testRetrieveMemberById_Success() {
+        // REQ-1.3.2: The system shall support retrieving a single member by their unique identifier.
+        // REQ-3.1.3: The API shall support retrieving a single member by ID (GET /members/{id}).
+
+        // Step 1: Register a new member to get a valid ID
         String testName = generateValidName();
         String uniqueEmail = generateUniqueEmail();
         String testPhone = generateValidPhoneNumber();
 
-        // Use the helper to create a member and get its ID (as a string)
-        String memberIdStr = createMemberAndGetId(testName, uniqueEmail, testPhone);
-        assertNotNull(memberIdStr, "Could not retrieve ID from POST response.");
-        Integer memberIdInt = Integer.parseInt(memberIdStr); // Convert to Integer for comparison
+        JsonObject newMemberPayload = Json.createObjectBuilder()
+                .add("name", testName)
+                .add("email", uniqueEmail)
+                .add("phoneNumber", testPhone)
+                .build();
 
         given()
+            .contentType(ContentType.JSON)
+            .body(newMemberPayload.toString())
+        .when()
+            .post()
+        .then()
+            .statusCode(200);
+
+        // Step 2: Get all members to find the ID of the newly created one
+        Response getAllResponse = given()
             .accept(ContentType.JSON)
-            .pathParam("id", memberIdStr) // Path param is still a string
+        .when()
+            .get()
+        .then()
+            .statusCode(200)
+            .extract().response();
+        
+        List<Map<String, Object>> allMembers = getAllResponse.jsonPath().getList("$");
+        Integer memberId = null;
+        for (Map<String, Object> member : allMembers) {
+            if (uniqueEmail.equals(member.get("email"))) {
+                memberId = ((Number) member.get("id")).intValue();
+                break;
+            }
+        }
+        assertNotNull(memberId, "Could not find newly created member to retrieve its ID.");
+
+        // Step 3: Retrieve the member by its ID
+        given()
+            .accept(ContentType.JSON)
+            .pathParam("id", memberId)
         .when()
             .get("/{id}")
         .then()
             .statusCode(200)
             .contentType(ContentType.JSON)
-            .body("id", equalTo(memberIdInt)) // Compare with Integer ID
+            .body("id", equalTo(memberId))
             .body("name", equalTo(testName))
             .body("email", equalTo(uniqueEmail))
             .body("phoneNumber", equalTo(testPhone));
@@ -303,7 +361,8 @@ public class MemberRegistrationAcceptanceTest {
     @Test
     @Order(9)
     public void testRetrieveMemberById_NotFound() {
-        Long nonExistentId = 999999L; // A Long ID that is unlikely to exist
+        // REQ-1.3.2, REQ-3.1.3, REQ-3.1.5 (404 for not found)
+        long nonExistentId = 999999L; // Assuming this ID will not exist
 
         given()
             .accept(ContentType.JSON)
@@ -312,17 +371,23 @@ public class MemberRegistrationAcceptanceTest {
             .get("/{id}")
         .then()
             .statusCode(404);
+            // Optionally, check for an empty body or a specific error message if the API provides one for 404.
+            // For now, just checking the status code.
     }
 
     @Test
     @Order(10)
     public void testListAllMembers_IsOrderedByName() {
+        // REQ-1.3.1: The system shall provide capability to retrieve a list of all members, ordered by name.
+        // REQ-3.1.2: The API shall support retrieving the list of all members (GET /members).
+
+        // Step 1: Ensure some members exist with known names for ordering check.
         String nameAlice = "Alice Wonderland";
         String nameBob = "Bob The Builder";
         String nameCharlie = "Charlie Chaplin";
 
         String emailAlice = generateUniqueEmail();
-        try { Thread.sleep(10); } catch (InterruptedException ignored) {}
+        try { Thread.sleep(10); } catch (InterruptedException ignored) {} // Ensure unique timestamps for emails
         String emailBob = generateUniqueEmail();
         try { Thread.sleep(10); } catch (InterruptedException ignored) {}
         String emailCharlie = generateUniqueEmail();
@@ -344,11 +409,12 @@ public class MemberRegistrationAcceptanceTest {
             .add("email", emailCharlie)
             .add("phoneNumber", generateValidPhoneNumber()).build();
 
-        // Ensure all registrations are successful (200 or 201)
-        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
-        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
-        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post().then().statusCode(anyOf(is(200), is(201)));
+        // Register members in a non-alphabetical order of names to test sorting
+        given().contentType(ContentType.JSON).body(memberCharliePayload.toString()).when().post().then().statusCode(200);
+        given().contentType(ContentType.JSON).body(memberAlicePayload.toString()).when().post().then().statusCode(200);
+        given().contentType(ContentType.JSON).body(memberBobPayload.toString()).when().post().then().statusCode(200);
 
+        // Step 2: Retrieve all members
         Response response = given()
             .accept(ContentType.JSON)
         .when()
@@ -367,42 +433,14 @@ public class MemberRegistrationAcceptanceTest {
             }
         }
         
+        // The list from the server is already sorted by name. 
+        // So, if we add our relevant names in the order they appear in the full list,
+        // they should naturally be sorted if the server-side sorting works.
+        // No client-side sort needed for relevantNames if server sorts correctly.
+
         assertEquals(3, relevantNames.size(), "Expected to find the 3 members created in this test.");
-        // Order check depends on the full list from the server. If other members exist, this is fragile.
-        // For more robust check, filter these 3, sort them client-side, then compare. Or ensure clean state.
-        // Assuming for now, if they are present, their relative order from server is correct if server sorts all.
-        assertTrue(relevantNames.containsAll(List.of(nameAlice, nameBob, nameCharlie)), "All test members should be present.");
-        
-        // A more robust order check if only these 3 were in the list and sorted:
-        // List<String> expectedSortedRelevantNames = new ArrayList<>(List.of(nameAlice, nameBob, nameCharlie));
-        // java.util.Collections.sort(expectedSortedRelevantNames); // Ensure it is sorted for comparison
-        // java.util.Collections.sort(relevantNames); // Sort the extracted list
-        // assertEquals(expectedSortedRelevantNames, relevantNames, "Relevant names are not sorted correctly.");
-
-        // Current check verifies presence; ordering is implied by server's `ORDER BY name`
-        // and the previous version of this test verified specific indices. 
-        // We assume if they are all present, they are in the correct order amongst themselves 
-        // if retrieved from a globally sorted list.
-    }
-
-    // Helper method to create a member and return its ID as a String
-    private String createMemberAndGetId(String name, String email, String phoneNumber) {
-        JsonObject memberPayload = Json.createObjectBuilder()
-            .add("name", name)
-            .add("email", email)
-            .add("phoneNumber", phoneNumber).build();
-
-        Response response = given()
-            .contentType(ContentType.JSON)
-            .body(memberPayload.toString())
-        .when()
-            .post()
-        .then()
-            .statusCode(anyOf(is(200), is(201))) // Allow 200 for update, 201 for new
-            .contentType(ContentType.JSON)
-            .body("id", greaterThanOrEqualTo(0)) // Expect integer ID >= 0
-            .extract().response();
-        
-        return JsonPath.from(response.asString()).getString("id");
+        assertEquals(nameAlice, relevantNames.get(0), "First member should be Alice.");
+        assertEquals(nameBob, relevantNames.get(1), "Second member should be Bob.");
+        assertEquals(nameCharlie, relevantNames.get(2), "Third member should be Charlie.");
     }
 }

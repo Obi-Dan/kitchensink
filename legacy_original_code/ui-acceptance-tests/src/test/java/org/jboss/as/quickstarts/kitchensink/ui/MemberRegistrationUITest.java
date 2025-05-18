@@ -40,18 +40,13 @@ public class MemberRegistrationUITest {
     // Helper method to save HTML snapshot
     private void saveHtmlSnapshot(Page currentPage, String testMethodName, String stepName) {
         try {
+            // Wait for the network to be idle, indicating dynamic updates might be complete.
+            // Timeout added to prevent test hanging indefinitely.
             currentPage.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(5000));
-            String pageContent = currentPage.content(); // Get content first
-            
-            // Print a snippet for debugging
-            System.out.println("---- HTML Content Snippet for " + testMethodName + "/" + stepName + " ----");
-            System.out.println(pageContent.substring(0, Math.min(pageContent.length(), 1000)));
-            System.out.println("---- End Snippet (Length: " + pageContent.length() + ") ----");
-
             Path snapshotDir = Paths.get("target", "html-snapshots", testMethodName);
-            Files.createDirectories(snapshotDir); 
+            Files.createDirectories(snapshotDir); // Ensure directory exists
             Path snapshotFile = snapshotDir.resolve(stepName + ".html");
-            Files.writeString(snapshotFile, pageContent);
+            Files.writeString(snapshotFile, currentPage.content());
             System.out.println("Saved HTML snapshot: " + snapshotFile.toAbsolutePath());
         } catch (PlaywrightException e) {
             System.err.println("PlaywrightException during saveHtmlSnapshot for " + testMethodName + "/" + stepName + ": " + e.getMessage());
@@ -62,15 +57,6 @@ public class MemberRegistrationUITest {
 
     // Helper method to verify page title
     private void verifyPageTitle(Page currentPage, String expectedTitle) {
-        currentPage.waitForLoadState(LoadState.DOMCONTENTLOADED, new Page.WaitForLoadStateOptions().setTimeout(10000));
-        currentPage.waitForLoadState(LoadState.LOAD, new Page.WaitForLoadStateOptions().setTimeout(10000));
-        // Add a small explicit wait for the title to potentially stabilize after load events
-        try {
-            currentPage.waitForFunction("() => document.title !== '' && document.title === '" + expectedTitle + "'", null, new Page.WaitForFunctionOptions().setTimeout(5000));
-        } catch (TimeoutError e) {
-            System.err.println("Timeout waiting for document.title to be '" + expectedTitle + "'. Current title: '" + currentPage.title() + "'");
-            // Fall through to the assertion which will likely fail and give a clearer Playwright error.
-        }
         assertThat(currentPage).hasTitle(expectedTitle);
     }
 
@@ -86,8 +72,9 @@ public class MemberRegistrationUITest {
         verifyPageTitle(currentPage, "kitchensink");
 
         // General page structure elements from default.xhtml template
-        Locator jbossLogo = currentPage.locator("div.dualbrand img[src='/gfx/rhjb_eap_logo.png']");
+        Locator jbossLogo = currentPage.locator("div.dualbrand img[src='resources/gfx/rhjb_eap_logo.png']");
         assertThat(jbossLogo).isVisible();
+        // Updated based on assumed output
         assertThat(jbossLogo).hasAttribute("alt", "JBoss Enterprise Application Platform"); 
 
         assertElementsVisible(
@@ -99,19 +86,14 @@ public class MemberRegistrationUITest {
         );
 
         // Check for specific text content in key areas
-        assertThat(currentPage.locator("h1").filter(new Locator.FilterOptions().setHasText("Welcome to JBoss (Quarkus Edition)!"))).isVisible();
+        assertThat(currentPage.locator("h1").filter(new Locator.FilterOptions().setHasText("Welcome to JBoss!"))).isVisible();
         
         // Aside content checks
-        Locator asidePara = currentPage.locator("div#aside").locator("p")
-            .filter(new Locator.FilterOptions().setHasText("Learn more about Red Hat JBoss Enterprise Application Platform (and Quarkus!)."));
-        assertThat(asidePara).isVisible();
-
-        assertElementsVisible(
-            currentPage.locator("div#aside"),
-            currentPage.locator("div#aside ul li a").filter(new Locator.FilterOptions().setHasText("Documentation")),
-            currentPage.locator("div#aside ul li a").filter(new Locator.FilterOptions().setHasText("Product Information"))
-        );
-
+        Locator aside = currentPage.locator("div#aside");
+        // Updated to match default.xhtml: p tag instead of h2, and updated text
+        assertThat(aside.locator("p").filter(new Locator.FilterOptions().setHasText("Learn more about Red Hat JBoss Enterprise Application Platform."))).isVisible(); 
+        assertThat(aside.locator("ul li a").filter(new Locator.FilterOptions().setHasText("Documentation"))).isVisible();
+        assertThat(aside.locator("ul li a").filter(new Locator.FilterOptions().setHasText("Product Information"))).isVisible();
         // "Quickstarts" link was not found in assumed output, so its assertion remains commented or removed.
         // assertThat(aside.locator("ul li a").filter(new Locator.FilterOptions().setHasText("Quickstarts"))).isVisible();
 
@@ -119,13 +101,13 @@ public class MemberRegistrationUITest {
         // Registration Form Structure (These were generally okay)
         Locator registrationForm = currentPage.locator("form#reg");
         assertThat(registrationForm.locator("h2").filter(new Locator.FilterOptions().setHasText("Member Registration"))).isVisible();
-        assertThat(registrationForm.locator("label[for='name']").filter(new Locator.FilterOptions().setHasText("Name:"))).isVisible();
-        assertThat(registrationForm.locator("input#name")).isVisible();
-        assertThat(registrationForm.locator("label[for='email']").filter(new Locator.FilterOptions().setHasText("Email:"))).isVisible();
-        assertThat(registrationForm.locator("input#email")).isVisible();
-        assertThat(registrationForm.locator("label[for='phoneNumber']").filter(new Locator.FilterOptions().setHasText("Phone #:"))).isVisible();
-        assertThat(registrationForm.locator("input#phoneNumber")).isVisible();
-        assertThat(registrationForm.locator("input#register[value='Register']")).isVisible();
+        assertThat(registrationForm.locator("label[for='reg:name']").filter(new Locator.FilterOptions().setHasText("Name:"))).isVisible();
+        assertThat(registrationForm.locator("input#reg\\:name")).isVisible();
+        assertThat(registrationForm.locator("label[for='reg:email']").filter(new Locator.FilterOptions().setHasText("Email:"))).isVisible();
+        assertThat(registrationForm.locator("input#reg\\:email")).isVisible();
+        assertThat(registrationForm.locator("label[for='reg:phoneNumber']").filter(new Locator.FilterOptions().setHasText("Phone #:"))).isVisible();
+        assertThat(registrationForm.locator("input#reg\\:phoneNumber")).isVisible();
+        assertThat(registrationForm.locator("input#reg\\:register[value='Register']")).isVisible();
 
         // Members List Structure
         assertThat(currentPage.locator("h2").filter(new Locator.FilterOptions().setHasText("Members"))).isVisible();
@@ -133,7 +115,7 @@ public class MemberRegistrationUITest {
         // Footer content check
         Locator footer = currentPage.locator("div#footer");
         // Updated to match default.xhtml: specific text content
-        assertThat(footer.locator("p").filter(new Locator.FilterOptions().setHasText("This project was generated from a Maven archetype from JBoss (migrated to Quarkus)."))).isVisible(); // UPDATED TEXT
+        assertThat(footer.locator("p").filter(new Locator.FilterOptions().setHasText("This project was generated from a Maven archetype from JBoss."))).isVisible(); 
         // Footer image assertion removed as it's not in default.xhtml
         // assertThat(footer.locator("img[alt='Powered by JBoss AS 7']")).isVisible(); 
 
@@ -159,10 +141,10 @@ public class MemberRegistrationUITest {
 
     // Helper method to register a member
     private void registerMember(String name, String email, String phone) {
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         nameInput.fill(name);
         emailInput.fill(email);
@@ -247,10 +229,10 @@ public class MemberRegistrationUITest {
         verifyKitchensinkMainPageStructure(page); // Verify common page elements
 
         // REQ-2.1.5: Form for member registration
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         assertThat(nameInput).isVisible();
         assertThat(emailInput).isVisible();
@@ -293,7 +275,7 @@ public class MemberRegistrationUITest {
         assertThat(newMemberRow.locator("td").filter(new Locator.FilterOptions().setHasText(testEmail))).isVisible();
 
         // Verify the REST link for the newly registered member
-        Locator memberRestLink = newMemberRow.locator("a[href*='/rest/app/api/members/']");
+        Locator memberRestLink = newMemberRow.locator("a[href*='/rest/members/']");
         assertThat(memberRestLink).isVisible();
         String memberRestHref = memberRestLink.getAttribute("href");
         
@@ -319,10 +301,10 @@ public class MemberRegistrationUITest {
         saveHtmlSnapshot(page, "testRegistrationValidationErrors", "01_initial_page_load");
         verifyKitchensinkMainPageStructure(page); // Verify common page elements
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         nameInput.fill("ThisNameIsWayTooLongAndInvalid1234567890");
         emailInput.fill("notanemail");
@@ -333,21 +315,21 @@ public class MemberRegistrationUITest {
         // For name (REQ-1.2.1) - Persistent issue: locator not finding visible message.
         // Commenting out for now as further debugging requires manual DOM inspection.
         // Assuming input is in a <td>, message is in the next <td>.
-        // Locator nameMessageCell = page.locator("input#name").locator("xpath=../following-sibling::td[1]");
+        // Locator nameMessageCell = page.locator("id=reg:name").locator("xpath=../following-sibling::td[1]");
         // Locator nameMessage = nameMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // Corrected to use xpath=
         // assertThat(nameMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         // assertThat(nameMessage).containsText("size must be between 1 and 25");
 
         // For email (REQ-1.2.2)
         // Assuming input is in a <td>, message is in the next <td> which is a sibling of the input's parent <td>.
-        Locator emailMessageCell = page.locator("input#email").locator("xpath=../following-sibling::td[1]");
+        Locator emailMessageCell = page.locator("id=reg:email").locator("xpath=../following-sibling::td[1]");
         Locator emailMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // Corrected to use xpath=
         assertThat(emailMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         assertThat(emailMessage).containsText("must be a well-formed email address");
 
         // For phone (REQ-1.2.3)
         // Assuming input is in a <td>, message is in the next <td>.
-        Locator phoneMessageCell = page.locator("input#phoneNumber").locator("xpath=../following-sibling::td[1]");
+        Locator phoneMessageCell = page.locator("id=reg:phoneNumber").locator("xpath=../following-sibling::td[1]");
         Locator phoneMessage = phoneMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
         assertThat(phoneMessage).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10000));
         
@@ -393,8 +375,8 @@ public class MemberRegistrationUITest {
         verifyKitchensinkMainPageStructure(page); // Ensure page is loaded
 
         // This link is in the footer of the h:dataTable
-        Locator allMembersRestLink = page.locator("table.simpletablestyle tfoot a[href='/rest/app/api/members']")
-                                       .filter(new Locator.FilterOptions().setHasText("/rest/app/api/members"));
+        Locator allMembersRestLink = page.locator("table.simpletablestyle tfoot a[href*='/rest/members']")
+                                       .filter(new Locator.FilterOptions().setHasText("/rest/members"));
         assertThat(allMembersRestLink).isVisible();
         
         Page restPage = context.newPage(); // Open in a new page/tab
@@ -419,10 +401,10 @@ public class MemberRegistrationUITest {
         String uniqueName2 = "User Two";
         String phone = "1234567890";
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         // Register first user
         nameInput.fill(uniqueName1);
@@ -453,7 +435,7 @@ public class MemberRegistrationUITest {
         Locator globalDuplicateError = page.locator("ul.messages li.invalid");
 
         assertThat(globalDuplicateError).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(7000));
-        assertThat(globalDuplicateError).hasText(Pattern.compile("(unique index|primary key violation|duplicate|already registered|email already exists)", Pattern.CASE_INSENSITIVE));
+        assertThat(globalDuplicateError).hasText(Pattern.compile("(Unique index|primary key violation|duplicate)", Pattern.CASE_INSENSITIVE));
 
         // Verify the second user was NOT added to the table
         assertThat(page.locator("table.simpletablestyle").locator("tr").filter(new Locator.FilterOptions().setHasText(uniqueName2))).isHidden();
@@ -467,10 +449,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
         Locator nameMessageCell = nameInput.locator("xpath=../following-sibling::td[1]");
         Locator nameErrorMessage = nameMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
 
@@ -517,7 +499,7 @@ public class MemberRegistrationUITest {
         saveHtmlSnapshot(page, "testNameValidation", "04_name_with_special_chars");
 
         // Verify that NO field-specific error message appears for the name
-        assertThat(nameErrorMessage).hasText("", new LocatorAssertions.HasTextOptions().setUseInnerText(true).setTimeout(5000));
+        assertThat(nameErrorMessage).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(5000));
         
         // Verify user IS ADDED to the table as the name was accepted
         assertThat(page.locator("table.simpletablestyle").locator("tr").filter(new Locator.FilterOptions().setHasText(specialCharsEmail))).isVisible();
@@ -531,10 +513,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
         // Locator emailMessageCell = emailInput.locator("xpath=../following-sibling::td[1]"); // REMOVE
         // Locator emailErrorMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]"); // REMOVE
         // Use a more direct CSS selector (this was also an intermediate step, also remove if the XPath in loop is preferred):
@@ -560,7 +542,7 @@ public class MemberRegistrationUITest {
             System.out.println("Testing email validation for: " + invalidEmail); // DEBUG PRINT
             
             // Define locator inside the loop for maximum freshness
-            String emailErrorXPath = "//form[@id='reg']//tr[.//input[@id='email']]//td[last()]/span[contains(@class, 'invalid')]";
+            String emailErrorXPath = "//form[@id='reg']//tr[.//input[@id='reg:email']]//td[last()]/span[contains(@class, 'invalid')]";
             // Initial locator definition (will be re-assigned if waitForSelector is successful)
             Locator emailErrorMessage = page.locator(emailErrorXPath);
 
@@ -608,10 +590,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
         Locator phoneMessageCell = phoneInput.locator("xpath=../following-sibling::td[1]");
         Locator phoneErrorMessage = phoneMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
 
@@ -693,10 +675,10 @@ public class MemberRegistrationUITest {
         }
 
         // Register a member to make the table appear
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         String testName = "First Member";
         String testEmail = "first.member." + System.currentTimeMillis() + "@example.com";
@@ -815,7 +797,7 @@ public class MemberRegistrationUITest {
         assertThat(row.locator("td").nth(3)).hasText(expectedPhone); // Phone
         
         // Verify REST link for this member (REQ-2.1.10)
-        assertThat(row.locator("td").nth(4).locator("a[href*='/rest/app/api/members/']")).isVisible();
+        assertThat(row.locator("td").nth(4).locator("a[href*='/rest/members/']")).isVisible();
     }
 
     @Test
@@ -832,9 +814,9 @@ public class MemberRegistrationUITest {
         saveHtmlSnapshot(page, "testFormClearedAfterSuccessfulRegistration", "01_after_registration");
 
         // Verify form fields are empty
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
 
         assertThat(nameInput).isEmpty();
         assertThat(emailInput).isEmpty();
@@ -849,10 +831,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         String invalidName = "NameWithNumber123"; // Invalid
         String validEmail = "persist." + System.currentTimeMillis() + "@example.com"; // Valid
@@ -885,10 +867,10 @@ public class MemberRegistrationUITest {
         page.navigate(appUrl);
         verifyKitchensinkMainPageStructure(page);
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         String nameWithSpaces = "  Spaced Name  ";
         // Create a unique email for this test run to avoid conflicts
@@ -918,9 +900,9 @@ public class MemberRegistrationUITest {
 
         // Form fields should still be empty or reflect submitted (untrimmed) values depending on exact JSF lifecycle with this issue.
         // For now, focusing on the table state.
-        // assertThat(page.locator("input#name")).isEmpty();
-        // assertThat(page.locator("input#email")).isEmpty();
-        // assertThat(page.locator("input#phoneNumber")).isEmpty();
+        // assertThat(page.locator("id=reg:name")).isEmpty();
+        // assertThat(page.locator("id=reg:email")).isEmpty();
+        // assertThat(page.locator("id=reg:phoneNumber")).isEmpty();
 
         page.waitForTimeout(500);
     }
@@ -937,10 +919,10 @@ public class MemberRegistrationUITest {
         String uniqueSingleTldEmail = "user." + System.currentTimeMillis() + "@domain.c";
         String testPhone = "1234567890";
 
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         nameInput.fill(testName);
         emailInput.fill(uniqueSingleTldEmail);
@@ -953,7 +935,7 @@ public class MemberRegistrationUITest {
         // 1. Verify no field-specific error message for the email field
         Locator emailMessageCell = emailInput.locator("xpath=../following-sibling::td[1]");
         Locator emailErrorMessage = emailMessageCell.locator("xpath=./span[contains(@class, 'invalid')]");
-        assertThat(emailErrorMessage).hasText("", new LocatorAssertions.HasTextOptions().setUseInnerText(true).setTimeout(3000)); // Assert empty text
+        assertThat(emailErrorMessage).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(3000)); // Should not be an error
 
         // 2. Verify global success message (if applicable and consistent)
         // Using the same success message check as in testRegisterNewMember
@@ -1023,10 +1005,10 @@ public class MemberRegistrationUITest {
 
     // Helper to fill and submit the registration form for inspection
     private void fillAndSubmitForm(String name, String email, String phone) {
-        Locator nameInput = page.locator("input#name");
-        Locator emailInput = page.locator("input#email");
-        Locator phoneInput = page.locator("input#phoneNumber");
-        Locator registerButton = page.locator("input#register");
+        Locator nameInput = page.locator("id=reg:name");
+        Locator emailInput = page.locator("id=reg:email");
+        Locator phoneInput = page.locator("id=reg:phoneNumber");
+        Locator registerButton = page.locator("id=reg:register");
 
         nameInput.fill(name);
         emailInput.fill(email);
@@ -1068,7 +1050,7 @@ public class MemberRegistrationUITest {
     // Helper method to be called by inspectAndPrintPageElementValues
     private void printPageDetails() {
         // 1. JBoss Logo alt text
-        Locator jbossLogo = page.locator("div.dualbrand img[src='/gfx/rhjb_eap_logo.png']");
+        Locator jbossLogo = page.locator("div.dualbrand img[src='resources/gfx/rhjb_eap_logo.png']");
         if (jbossLogo.isVisible()) {
             String altText = jbossLogo.getAttribute("alt");
             System.out.println("JBoss Logo 'alt' attribute: " + (altText != null ? "'" + altText + "'" : "null or not set"));

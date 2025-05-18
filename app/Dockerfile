@@ -1,27 +1,33 @@
-FROM maven:3.9-eclipse-temurin-11 AS builder
+# Stage 1: Build the Quarkus application
+# FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS builder
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
-WORKDIR /app
-COPY . .
-RUN mvn clean package
+WORKDIR /project
 
-FROM quay.io/wildfly/wildfly:28.0.1.Final-jdk11
+# Copy only the pom.xml to leverage Docker cache for dependencies
+COPY pom.xml .
 
-# Copy the built war file to the deployments directory
-COPY --from=builder /app/target/kitchensink.war /opt/jboss/wildfly/standalone/deployments/
+# Clean, Download dependencies, ensuring fresh state
+RUN rm -rf target && mvn clean dependency:go-offline -B
 
-# Expose web and management ports
+# Copy the rest of the application source code
+COPY src ./src
+
+# Clean, Build the Uber-JAR, ensuring fresh state
+RUN rm -rf target && mvn clean package -Dquarkus.package.type=uber-jar -DskipTests
+
+# Stage 2: Create the runtime image
+FROM eclipse-temurin:21-jre-jammy AS runtime
+
+WORKDIR /work/
+
+# Copy the Uber-JAR from the builder stage
+COPY --from=builder /project/target/*-runner.jar ./application.jar
+
 EXPOSE 8080
-EXPOSE 9990
 
-# Add admin user for management console access
-RUN /opt/jboss/wildfly/bin/add-user.sh admin Admin#70365 --silent
+ENV JAVA_OPTS="-Xms512m -Xmx1024m"
 
-# Create log directory and set proper permissions
-USER root
-RUN mkdir -p /opt/jboss/wildfly/standalone/log && \
-    chown -R jboss:0 /opt/jboss/wildfly/standalone/log && \
-    chmod -R 775 /opt/jboss/wildfly/standalone/log
-USER jboss
+# No need for add-user.sh or specific WildFly configurations
 
-# Run with the standalone-full.xml configuration to ensure all required EE features are available
-CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0", "-bmanagement", "0.0.0.0"] 
+ENTRYPOINT ["java", "-Dquarkus.http.host=0.0.0.0", "-jar", "application.jar"] 

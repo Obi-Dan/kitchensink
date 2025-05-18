@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2015, Red Hat, Inc. and/or its affiliates, and individual
+ * Copyright 2023, Red Hat, Inc. and/or its affiliates, and individual
  * contributors by the @authors tag. See the copyright.txt in the
  * distribution for a full listing of individual contributors.
  *
@@ -16,26 +16,62 @@
  */
 package org.jboss.as.quickstarts.kitchensink.service;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import java.util.logging.Logger;
+// Keep for when/if re-enabled
 import org.jboss.as.quickstarts.kitchensink.model.Member;
+import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
+import org.jboss.logging.Logger;
 
-// The @Stateless annotation eliminates the need for manual transaction demarcation
-@Stateless
+@ApplicationScoped
 public class MemberRegistration {
 
-  @Inject private Logger log;
+    private static final Logger LOG = Logger.getLogger(MemberRegistration.class);
+    private static final String MEMBER_ID_SEQUENCE_NAME = "memberId";
 
-  @Inject private EntityManager em;
+    @Inject MemberRepository memberRepository;
 
-  @Inject private Event<Member> memberEventSrc;
+    @Inject SequenceGeneratorService sequenceGenerator;
 
-  public void register(Member member) throws Exception {
-    log.info("Registering " + member.getName());
-    em.persist(member);
-    memberEventSrc.fire(member);
-  }
+    @Inject Event<Member> memberEventSrc;
+
+    // Custom exception for duplicate email
+    public static class EmailAlreadyExistsException extends Exception {
+        public EmailAlreadyExistsException(String message) {
+            super(message);
+        }
+    }
+
+    // @Transactional // Temporarily removed to test if this is causing connection resets
+    public void register(Member member) throws EmailAlreadyExistsException {
+        if (member == null) {
+            LOG.error("REG_SVC: Attempt to register a null member.");
+            throw new IllegalArgumentException("Member to register cannot be null.");
+        }
+        LOG.info("REG_SVC: Attempting to register member: " + member.email);
+
+        LOG.info("REG_SVC: Checking email uniqueness for: " + member.email);
+        if (memberRepository.findByEmail(member.email).isPresent()) { // USE REPOSITORY
+            LOG.warn("REG_SVC: Email already exists: " + member.email);
+            throw new EmailAlreadyExistsException("Email already exists: " + member.email);
+        }
+
+        Long newId = sequenceGenerator.getNextSequence(MEMBER_ID_SEQUENCE_NAME);
+        member.setId(newId);
+        LOG.info("REG_SVC: Assigned new ID " + newId + " to member: " + member.email);
+
+        LOG.info("REG_SVC: Persisting member: " + member.email + " with ID: " + member.getId());
+        memberRepository.persist(member); // USE REPOSITORY
+        LOG.info("REG_SVC: Member persisted: " + member.email + " with ID: " + member.getId());
+
+        LOG.info("REG_SVC: Firing member registration event for: " + member.email);
+        memberEventSrc.fire(member);
+        LOG.info("REG_SVC: Fired member registration event for: " + member.email);
+    }
+
+    // emailExists method was effectively inlined into register or uses repository directly
+    // public boolean emailExists(String email) {
+    //     return memberRepository.findByEmail(email).isPresent();
+    // }
 }
