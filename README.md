@@ -72,9 +72,9 @@ The `docs/` folder contains further information about the project, its history, 
 *   [**MIGRATION_DIARY.md**](docs/MIGRATION_DIARY.md): A chronological log of the migration from JBoss EAP/Jakarta EE to Quarkus, including challenges and solutions.
 *   [**MIGRATION_PLAN.md**](docs/MIGRATION_PLAN.md): Describes the overall plan and approach taken for the application migration.
 *   [**ORIGINAL_ARCHITECTURE.md**](docs/ORIGINAL_ARCHITECTURE.md): An overview of the system architecture of the original JBoss EAP/Jakarta EE application.
+*   [**ORIGINAL_PROJECT_EVALUATION.md**](docs/ORIGINAL_PROJECT_EVALUATION.md): An evaluation of the original project before migration, covering its state, and technologies.
 *   [**ORIGINAL_TESTS.md**](docs/ORIGINAL_TESTS.md): Information about the testing strategies and specific tests present in the original version of the application.
 *   [**ORIGINAL_UI_SEQUENCE.md**](docs/ORIGINAL_UI_SEQUENCE.md): Explanations and diagrams of user interface flows in the original JBoss EAP/Jakarta EE application.
-*   [**SUMMARY.md**](docs/SUMMARY.md): A general summary document related to the project or migration efforts.
 *   [**TEST_COVERAGE.md**](docs/TEST_COVERAGE.md): Details the overall test strategy (unit, API, UI), instructions for running tests, and analysis of unit test coverage with JaCoCo.
 
 ## Testing the Application
