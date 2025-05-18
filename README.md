@@ -70,7 +70,7 @@ The `docs/` folder contains further information about the project, its history, 
 *   [**BUSINESS_REQUIREMENTS.md**](docs/BUSINESS_REQUIREMENTS.md): Outlines the business goals and functional requirements for the application.
 *   [**CODING_STANDARDS.md**](docs/CODING_STANDARDS.md): Specifies coding conventions and style guidelines adopted for this project.
 *   [**MIGRATION_DIARY.md**](docs/MIGRATION_DIARY.md): A chronological log of the migration from JBoss EAP/Jakarta EE to Quarkus, including challenges and solutions.
-*   [**MIGRATION_STRATEGY.md**](docs/MIGRATION_STRATEGY.md): Describes the overall plan and approach taken for the application migration.
+*   [**MIGRATION_PLAN.md**](docs/MIGRATION_PLAN.md): Describes the overall plan and approach taken for the application migration.
 *   [**ORIGINAL_ARCHITECTURE.md**](docs/ORIGINAL_ARCHITECTURE.md): An overview of the system architecture of the original JBoss EAP/Jakarta EE application.
 *   [**ORIGINAL_TESTS.md**](docs/ORIGINAL_TESTS.md): Information about the testing strategies and specific tests present in the original version of the application.
 *   [**ORIGINAL_UI_SEQUENCE.md**](docs/ORIGINAL_UI_SEQUENCE.md): Explanations and diagrams of user interface flows in the original JBoss EAP/Jakarta EE application.
