@@ -16,10 +16,11 @@
  */
 package org.jboss.as.quickstarts.kitchensink.service;
 
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-// Keep for when/if re-enabled
 import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
 import org.jboss.logging.Logger;
@@ -43,7 +44,12 @@ public class MemberRegistration {
         }
     }
 
-    // @Transactional // Temporarily removed to test if this is causing connection resets
+    @Timed(
+            value = "members.registration.service.time",
+            description = "Time taken to register a member via service")
+    @Counted(
+            value = "members.registration.service.count",
+            description = "Number of member registration attempts via service")
     public void register(Member member) throws EmailAlreadyExistsException {
         if (member == null) {
             LOG.error("REG_SVC: Attempt to register a null member.");

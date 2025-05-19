@@ -16,6 +16,8 @@
  */
 package org.jboss.as.quickstarts.kitchensink.rest;
 
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
@@ -103,6 +105,12 @@ public class MemberResourceRESTService {
     @Path("/api/members")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(
+            value = "members.api.creation.time",
+            description = "Time taken to create a member via API")
+    @Counted(
+            value = "members.api.creation.count",
+            description = "Number of member API creation attempts")
     public Response createMemberApi(Member member) {
         LOG.info(
                 "API: Received createMemberApi request for email: "
@@ -175,6 +183,12 @@ public class MemberResourceRESTService {
     @Path("/ui/register")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML)
+    @Timed(
+            value = "members.ui.registration.time",
+            description = "Time taken to register a member via UI")
+    @Counted(
+            value = "members.ui.registration.count",
+            description = "Number of member UI registration attempts")
     public TemplateInstance registerViaUi(
             @FormParam("name") String name,
             @FormParam("email") String email,
