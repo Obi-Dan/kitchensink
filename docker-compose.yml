@@ -44,6 +44,8 @@ services:
       start_period: 120s
 
   ui-tests:
+    profiles:
+      - ui-profile
     build:
       context: .
       dockerfile: ./ui-acceptance-tests/Dockerfile

@@ -138,9 +138,9 @@ ui-test:
 	docker-compose build --no-cache \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		--build-arg MAVEN_ARGS="$(MAVEN_OPTS)" \
-		app ui-tests mongo
-	@echo "Starting application services for UI acceptance tests (docker-compose.yml in root)..."
-	docker-compose up -d app mongo # Start app and mongo
+		app ui-tests  # Mongo removed from explicit build target
+	@echo "Starting application service for UI acceptance tests (docker-compose.yml in root)..."
+	docker-compose up -d app # App service explicitly started (mongo will follow due to depends_on)
 	@echo "Waiting for app service to be healthy (UI tests depend on app)..."
 	@timeout_seconds=180; \
 	start_time=$$(date +%s); \
