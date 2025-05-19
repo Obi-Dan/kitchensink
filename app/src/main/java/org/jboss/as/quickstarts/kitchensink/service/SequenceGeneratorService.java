@@ -23,11 +23,13 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.bson.Document;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+@UnlessBuildProfile("test")
 @ApplicationScoped
 public class SequenceGeneratorService {
 

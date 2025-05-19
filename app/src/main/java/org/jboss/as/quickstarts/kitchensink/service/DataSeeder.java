@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -30,6 +31,7 @@ import org.jboss.as.quickstarts.kitchensink.model.Member;
 import org.jboss.as.quickstarts.kitchensink.model.MemberRepository;
 import org.jboss.logging.Logger;
 
+@UnlessBuildProfile("test")
 @ApplicationScoped
 public class DataSeeder {
 
